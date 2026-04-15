@@ -27,6 +27,24 @@ html, body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif;
 }
 
+/* =========
+   埋め込みモード（iframe / ポップアップ想定）
+   - 親ページ側でレイアウトするため、外側の余白・背景を消す
+   ========= */
+html.embed, html.embed body{
+  background: transparent;
+}
+html.embed #wrap{
+  max-width:none;
+  padding:0;
+  min-height: 0;
+}
+html.embed #container{
+  border-radius:0;
+  box-shadow:none;
+  background: transparent;
+}
+
 #wrap{
   width:100%;
   max-width:980px;
@@ -57,32 +75,32 @@ canvas{
    Mobile / Portrait（余白を減らして画面にフィット）
    ========= */
 @media (max-aspect-ratio: 3/4) {
-  #wrap{
+  html:not(.embed) #wrap{
     max-width:none;
     padding:0;
   }
 
-  #container{
+  html:not(.embed) #container{
     height: 100dvh;
     border-radius:0;
     box-shadow:none;
   }
 
   /* 縦長では「横幅100%」より「高さ優先」の方が余白が減る */
-  canvas{
+  html:not(.embed) canvas{
     height: 100dvh;
     width: auto;
     max-width: 100vw;
     margin: 0 auto;
   }
 
-  .hud{
+  html:not(.embed) .hud{
     top: max(10px, env(safe-area-inset-top));
     left: max(10px, env(safe-area-inset-left));
     right: max(10px, env(safe-area-inset-right));
   }
 
-  .overlay{
+  html:not(.embed) .overlay{
     padding:
       max(18px, env(safe-area-inset-top))
       max(18px, env(safe-area-inset-right))
