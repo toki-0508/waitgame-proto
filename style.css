@@ -12,7 +12,8 @@
   --accent2:#27d6ff;
   --danger:#ff4d4d;
   --shadow: 0 18px 50px rgba(0,0,0,.45);
-  --game-max-width: 980px;
+  /* Standalone時の上限（基本は上限なしで“画面にフィット”させる） */
+  --game-max-width: 99999px;
 }
 
 html, body{
@@ -54,7 +55,7 @@ html.embed #container{
 
 #wrap{
   width:100%;
-  max-width:var(--game-max-width);
+  max-width:none;
   margin:0 auto;
   padding:16px;
   box-sizing:border-box;
@@ -87,7 +88,7 @@ canvas{
    ========= */
 html:not(.embed) #container{
   /* wrap padding(16*2)=32 を引いた“実質表示領域”にフィット */
-  width: min(var(--game-max-width), calc(100vw - 32px), calc((100dvh - 32px) * 16 / 9));
+  width: min(calc(100vw - 32px), calc((100dvh - 32px) * 16 / 9));
   height: min(calc(100dvh - 32px), calc((100vw - 32px) * 9 / 16));
 }
 
