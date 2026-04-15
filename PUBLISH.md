@@ -28,6 +28,12 @@ GitHub Pages にするとURLが固定になります。
 1. `webgame/` をリポジトリとしてpush
 2. GitHubの `Settings → Pages` で `main` ブランチ `/ (root)` を選ぶ
 
+このフォルダには自動化スクリプトも置いてあります:
+
+```bash
+./publish_pages.sh owner/repo
+```
+
 ## 3) 送付文テンプレ
 
 件名: ミニゲーム試作（プロトタイプ）共有
