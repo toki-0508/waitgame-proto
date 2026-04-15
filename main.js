@@ -2,6 +2,14 @@
 import { getRandomGenerationCharacterUrl } from "./storage_urls.js";
 import { startGame } from "./game.js";
 
+// 埋め込み（iframe / ポップアップ）想定のときは余白などを抑える
+// - iframe内なら自動で embed モード
+// - URLに ?embed=1 を付けても embed モード
+try {
+  const embed = (window.parent && window.parent !== window) || new URLSearchParams(location.search).get("embed") === "1";
+  document.documentElement.classList.toggle("embed", !!embed);
+} catch {}
+
 const statusEl = document.getElementById("status");
 const setStatus = (m) => (statusEl.textContent = m);
 
