@@ -515,7 +515,8 @@ export function startGame() {
       ctx.save();
       ctx.translate(d.x, d.y);
       ctx.rotate(d.rot * Math.sin(d.t * 3));
-      ctx.drawImage(d.sprite, -d.w / 2, -d.h / 2, d.w, d.h);
+      const { dw, dh } = fitImageToBox(d.sprite, d.w, d.h);
+      ctx.drawImage(d.sprite, -dw / 2, -dh / 2, dw, dh);
 
       if (d.isRare && CONFIG.RARE.SPARKLE_ENABLED) {
         drawSparkle(0, 0, d.w, d.t);
@@ -560,6 +561,15 @@ export function startGame() {
     }
     ctx.closePath();
     ctx.fill();
+  }
+
+  function fitImageToBox(img, boxW, boxH) {
+    const iw = img?.naturalWidth ?? 0;
+    const ih = img?.naturalHeight ?? 0;
+    if (iw <= 0 || ih <= 0) return { dw: boxW, dh: boxH };
+
+    const scale = Math.min(boxW / iw, boxH / ih);
+    return { dw: iw * scale, dh: ih * scale };
   }
 
   function draw() {
