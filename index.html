@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>待ち時間ミニゲーム</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="wrap">
+    <div id="container">
+      <canvas id="c" width="720" height="405"></canvas>
+      <div class="hud">
+        <div id="score">SCORE: 0</div>
+        <div id="status">BOOT</div>
+      </div>
+      <div id="overlay" class="overlay" style="display:none"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
