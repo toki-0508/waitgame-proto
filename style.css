@@ -173,12 +173,18 @@ html:not(.embed) #container{
   box-sizing:border-box;
   text-align:center;
   pointer-events:none; /* JSで表示中だけ auto にする */
+  overflow:auto; /* 結果表示が見切れる時にスクロールできるように */
+  -webkit-overflow-scrolling: touch;
   background: radial-gradient(850px 450px at 50% 40%, rgba(0,0,0,.45), rgba(0,0,0,.75));
   backdrop-filter: blur(10px);
 }
 
 .overlayCard{
   width:min(520px, 100%);
+  max-height: calc(100dvh - 56px);
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   border-radius:18px;
   background: linear-gradient(180deg, rgba(20,24,45,.78), rgba(8,10,18,.72));
   border: 1px solid rgba(255,255,255,.12);
