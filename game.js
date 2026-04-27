@@ -32,8 +32,8 @@ export function startGame() {
       SIZE_MAX: 44,
     },
     CHARA: {
-      SIZE_MIN: 34,
-      SIZE_MAX: 64,
+      SIZE_MIN: 48,
+      SIZE_MAX: 96,
       MISS_PENALTY_POINTS: 1,
     },
     FALL: {
@@ -94,7 +94,7 @@ export function startGame() {
   let bgReady = false;
   bg.onload = () => (bgReady = true);
   bg.onerror = () => (bgReady = false);
-  bg.src = "./background.png";
+  bg.src = "./img/background.png";
 
   // ===== iframe resize =====
   function postToParent(type, payload = {}) {
