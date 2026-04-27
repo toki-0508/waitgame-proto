@@ -12,8 +12,25 @@
   --accent2:#27d6ff;
   --danger:#ff4d4d;
   --shadow: 0 18px 50px rgba(0,0,0,.45);
-  /* Standalone時の上限（基本は上限なしで“画面にフィット”させる） */
-  --game-max-width: 99999px;
+  /* ゲーム画面の基本比率（PC想定） */
+  --aspect-w: 16;
+  --aspect-h: 9;
+}
+
+html{
+  --frame-pad: 32px; /* #wrap padding(16px) * 2 相当 */
+}
+
+html.portrait{
+  /* スマホ縦長想定 */
+  --aspect-w: 9;
+  --aspect-h: 16;
+}
+
+@media (max-width: 520px) {
+  html{
+    --frame-pad: 20px;
+  }
 }
 
 html, body{
@@ -49,8 +66,8 @@ html.embed #container{
   border-radius:0;
   box-shadow:none;
   background: transparent;
-  width: min(100vw, calc(100dvh * 16 / 9));
-  height: min(100dvh, calc(100vw * 9 / 16));
+  width: min(100vw, calc(100dvh * var(--aspect-w) / var(--aspect-h)));
+  height: min(100dvh, calc(100vw * var(--aspect-h) / var(--aspect-w)));
 }
 
 #wrap{
@@ -87,9 +104,15 @@ canvas{
    - 16:9 を維持しつつ、縦横どちらにもはみ出さない最大サイズ
    ========= */
 html:not(.embed) #container{
-  /* wrap padding(16*2)=32 を引いた“実質表示領域”にフィット */
-  width: min(calc(100vw - 32px), calc((100dvh - 32px) * 16 / 9));
-  height: min(calc(100dvh - 32px), calc((100vw - 32px) * 9 / 16));
+  /* #wrap 分の余白を引いた“実質表示領域”にフィット */
+  width: min(
+    calc(100vw - var(--frame-pad)),
+    calc((100dvh - var(--frame-pad)) * var(--aspect-w) / var(--aspect-h))
+  );
+  height: min(
+    calc(100dvh - var(--frame-pad)),
+    calc((100vw - var(--frame-pad)) * var(--aspect-h) / var(--aspect-w))
+  );
 }
 
 @media (max-width: 520px) {
@@ -101,8 +124,6 @@ html:not(.embed) #container{
       max(10px, env(safe-area-inset-left));
   }
   html:not(.embed) #container{
-    width: min(calc(100vw - 20px), calc((100dvh - 20px) * 16 / 9));
-    height: min(calc(100dvh - 20px), calc((100vw - 20px) * 9 / 16));
     border-radius:16px;
   }
 }
@@ -112,9 +133,9 @@ html:not(.embed) #container{
    ========= */
 .hud{
   position:absolute;
-  top:10px;
-  left:10px;
-  right:10px;
+  top:max(10px, env(safe-area-inset-top));
+  left:max(10px, env(safe-area-inset-left));
+  right:max(10px, env(safe-area-inset-right));
   display:flex;
   justify-content:space-between;
   gap:10px;
@@ -144,7 +165,11 @@ html:not(.embed) #container{
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:18px;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
   box-sizing:border-box;
   text-align:center;
   pointer-events:none; /* JSで表示中だけ auto にする */

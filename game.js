@@ -1,12 +1,50 @@
 // game.js
 export function startGame() {
-  const BASE_W = 720;
-  const BASE_H = 405;
   const ALLOWED_PARENT_ORIGIN = "*";
 
   /* ==========================
      ここは後で調整するパラメータ
      ========================== */
+  const PROFILE_TUNING = {
+    // PC（横長）想定
+    landscape: {
+      BASE_W: 720,
+      BASE_H: 405,
+      PLAYER_SPEED_MUL: 1.0,
+      PLAYER_SIZE_MUL: 1.0,
+      ITEM_SIZE_MUL: 1.0,
+      FALL_SPEED_MUL: 1.0,
+      SPAWN_INTERVAL_MUL: 1.0,
+      BOMB_RATE_MUL: 1.0,
+      SAFE_TIME_MUL: 1.0,
+    },
+    // スマホ（縦長）想定
+    portrait: {
+      BASE_W: 405,
+      BASE_H: 720,
+      PLAYER_SPEED_MUL: 0.92,
+      PLAYER_SIZE_MUL: 0.92,
+      ITEM_SIZE_MUL: 0.90,
+      FALL_SPEED_MUL: 1.45,
+      SPAWN_INTERVAL_MUL: 1.20,
+      BOMB_RATE_MUL: 0.95,
+      SAFE_TIME_MUL: 1.15,
+    },
+  };
+
+  function detectViewportProfile() {
+    const qs = new URLSearchParams(location.search);
+    if (qs.get("portrait") === "1") return "portrait";
+    if (qs.get("landscape") === "1") return "landscape";
+    if (document.documentElement.classList.contains("portrait")) return "portrait";
+    return "landscape";
+  }
+
+  let viewportProfile = detectViewportProfile();
+  let TUNE = PROFILE_TUNING[viewportProfile] ?? PROFILE_TUNING.landscape;
+  let BASE_W = TUNE.BASE_W;
+  let BASE_H = TUNE.BASE_H;
+
   const CONFIG = {
     DIFFICULTY: {
       SECONDS_TO_MAX: 60,
@@ -86,9 +124,6 @@ export function startGame() {
   const overlayEl = document.getElementById("overlay");
   const containerEl = document.getElementById("container");
 
-  canvas.width = BASE_W;
-  canvas.height = BASE_H;
-
   // ===== 背景：background.png（同階層）=====
   const bg = new Image();
   let bgReady = false;
@@ -120,8 +155,8 @@ export function startGame() {
   let lastPostedScore = 0;
 
   const player = {
-    x: BASE_W * 0.5,
-    y: BASE_H * CONFIG.PLAYER.Y_RATIO,
+    x: 0,
+    y: 0,
     w: CONFIG.PLAYER.WIDTH,
     h: CONFIG.PLAYER.HEIGHT,
     vx: 0,
@@ -134,6 +169,23 @@ export function startGame() {
   const collected = new Map(); // id -> count
 
   overlayEl.style.pointerEvents = "none";
+
+  function applyViewport(profile) {
+    viewportProfile = profile;
+    TUNE = PROFILE_TUNING[viewportProfile] ?? PROFILE_TUNING.landscape;
+    BASE_W = TUNE.BASE_W;
+    BASE_H = TUNE.BASE_H;
+
+    canvas.width = BASE_W;
+    canvas.height = BASE_H;
+
+    player.w = CONFIG.PLAYER.WIDTH * TUNE.PLAYER_SIZE_MUL;
+    player.h = CONFIG.PLAYER.HEIGHT * TUNE.PLAYER_SIZE_MUL;
+    player.y = BASE_H * CONFIG.PLAYER.Y_RATIO;
+
+    // ルール画面中の回転/リサイズは見た目だけ合わせる（プレイ中は変えない）
+    resetWorld();
+  }
 
   // ===== 入力 =====
   const input = { left: false, right: false, targetX: null };
@@ -181,6 +233,17 @@ export function startGame() {
       stopped = true;
       showOverlayDone("待ちが完了しました");
     }
+  });
+
+  // 画面の縦横が変わったら、ルール画面中のみ追従（プレイ中は触らない）
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (running) return;
+      const p = detectViewportProfile();
+      if (p !== viewportProfile) applyViewport(p);
+    }, 120);
   });
 
   // ===== 画像ロード（ローカル10枚 + レア1枚）=====
@@ -246,21 +309,21 @@ export function startGame() {
   function bombRate() {
     if (safeTime > 0) return 0;
     const d = difficulty01();
-    return CONFIG.BOMB.RATE_BASE + d * CONFIG.BOMB.RATE_ADD_BY_DIFFICULTY;
+    return (CONFIG.BOMB.RATE_BASE + d * CONFIG.BOMB.RATE_ADD_BY_DIFFICULTY) * TUNE.BOMB_RATE_MUL;
   }
 
   function spawnIntervalSec() {
     const d = difficulty01();
-    return Math.max(
-      CONFIG.SPAWN.INTERVAL_SEC_MIN,
-      CONFIG.SPAWN.INTERVAL_SEC_BASE - d * CONFIG.SPAWN.INTERVAL_SEC_DECAY
-    );
+    const base = CONFIG.SPAWN.INTERVAL_SEC_BASE - d * CONFIG.SPAWN.INTERVAL_SEC_DECAY;
+    const interval = base * TUNE.SPAWN_INTERVAL_MUL;
+    return Math.max(CONFIG.SPAWN.INTERVAL_SEC_MIN * TUNE.SPAWN_INTERVAL_MUL, interval);
   }
 
   function fallSpeed(scoreNow) {
     const d = difficulty01();
     const addByScore = Math.min(scoreNow * CONFIG.FALL.SPEED_ADD_BY_SCORE_FACTOR, CONFIG.FALL.SPEED_ADD_BY_SCORE_CAP);
-    return CONFIG.FALL.SPEED_BASE + d * CONFIG.FALL.SPEED_ADD_BY_DIFFICULTY + addByScore;
+    const v = CONFIG.FALL.SPEED_BASE + d * CONFIG.FALL.SPEED_ADD_BY_DIFFICULTY + addByScore;
+    return v * TUNE.FALL_SPEED_MUL;
   }
 
   function rand(min, max) {
@@ -296,9 +359,10 @@ export function startGame() {
 
   function spawnDrop() {
     const isBomb = Math.random() < bombRate();
+    const sizeMul = TUNE.ITEM_SIZE_MUL;
     const size = isBomb
-      ? rand(CONFIG.BOMB.SIZE_MIN, CONFIG.BOMB.SIZE_MAX)
-      : rand(CONFIG.CHARA.SIZE_MIN, CONFIG.CHARA.SIZE_MAX);
+      ? rand(CONFIG.BOMB.SIZE_MIN * sizeMul, CONFIG.BOMB.SIZE_MAX * sizeMul)
+      : rand(CONFIG.CHARA.SIZE_MIN * sizeMul, CONFIG.CHARA.SIZE_MAX * sizeMul);
 
     if (isBomb) {
       drops.push({
@@ -343,7 +407,7 @@ export function startGame() {
     drops.length = 0;
     spawnTimer = 0;
     elapsedRun = 0;
-    safeTime = CONFIG.BOMB.SAFE_TIME_SEC;
+    safeTime = CONFIG.BOMB.SAFE_TIME_SEC * TUNE.SAFE_TIME_MUL;
 
     player.x = BASE_W * 0.5;
     player.vx = 0;
@@ -378,13 +442,14 @@ export function startGame() {
     safeTime = Math.max(0, safeTime - dt);
 
     // プレイヤー移動（滑らか）
+    const speed = CONFIG.PLAYER.SPEED * TUNE.PLAYER_SPEED_MUL;
     let targetV = 0;
     if (input.targetX != null) {
       const dx = input.targetX - player.x;
-      targetV = clamp(dx / 70, -1, 1) * CONFIG.PLAYER.SPEED;
+      targetV = clamp(dx / 70, -1, 1) * speed;
     } else {
-      if (input.left) targetV -= CONFIG.PLAYER.SPEED;
-      if (input.right) targetV += CONFIG.PLAYER.SPEED;
+      if (input.left) targetV -= speed;
+      if (input.right) targetV += speed;
     }
 
     player.vx += (targetV - player.vx) * clamp(CONFIG.PLAYER.FOLLOW * dt, 0, 1);
@@ -448,30 +513,56 @@ export function startGame() {
   }
 
   function getStartButtonRect() {
-    return { x: BASE_W / 2 - 76, y: BASE_H - 148, w: 152, h: 44 };
+    const w = clamp(BASE_W * 0.30, 150, 240);
+    const h = clamp(BASE_H * 0.075, 44, 62);
+    const bottomPad = clamp(BASE_H * 0.14, 72, 132);
+    return { x: BASE_W / 2 - w / 2, y: BASE_H - bottomPad - h, w, h };
   }
 
   function drawRulesScreen() {
+    const b = getStartButtonRect();
+    const marginX = clamp(BASE_W * 0.10, 16, 110);
+    const cardY = clamp(BASE_H * 0.12, 28, 110);
+    const cardX = marginX;
+    const cardW = BASE_W - marginX * 2;
+    const cardBottom = b.y - clamp(BASE_H * 0.08, 26, 44);
+    const cardH = Math.max(170, cardBottom - cardY);
+
     ctx.fillStyle = "rgba(0,0,0,0.42)";
-    roundRect(ctx, 95, 85, BASE_W - 190, BASE_H - 170, 18);
+    roundRect(ctx, cardX, cardY, cardW, cardH, 18);
+
+    const fs = clamp(BASE_W / 720, 0.88, 1.05);
+    const titleSize = Math.round(18 * fs);
+    const bodySize = Math.round(13 * fs);
+    const lineH = Math.round(22 * fs);
+    const tx = cardX + clamp(cardW * 0.06, 14, 26);
+    let ty = cardY + clamp(cardH * 0.18, 34, 56);
 
     ctx.fillStyle = "#fff";
     ctx.globalAlpha = 0.96;
-    ctx.font = '900 18px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif';
-    ctx.fillText("ルール", 112, 118);
+    ctx.font = `900 ${titleSize}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.fillText("ルール", tx, ty);
 
-    ctx.font = '13px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif';
+    ctx.font = `${bodySize}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
     ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.fillText("・キャラを集めてポイントを稼ぐ", 112, 150);
-    ctx.fillText("・爆弾に当たるとゲームオーバー", 112, 172);
-    ctx.fillText("・左右移動：スワイプ / ← → キー", 112, 194);
-    ctx.fillText("・レアキャラは低確率で出現（高得点）", 112, 216);
+    ty += lineH + Math.round(6 * fs);
+    ctx.fillText("・キャラを集めてポイントを稼ぐ", tx, ty);
+    ty += lineH;
+    ctx.fillText("・爆弾に当たるとゲームオーバー", tx, ty);
+    ty += lineH;
+    ctx.fillText("・左右移動：スワイプ / ← → キー", tx, ty);
+    ty += lineH;
+    ctx.fillText("・レアキャラは低確率で出現（高得点）", tx, ty);
 
     const a = getAssetStatus();
+    ty += lineH;
     ctx.fillStyle = "rgba(255,255,255,0.80)";
-    ctx.fillText(`・画像: ${a.localReady}/${a.localTotal}  レア: ${a.rareReady ? "OK" : "LOADING"}`, 112, 240);
+    ctx.fillText(
+      `・画像: ${a.localReady}/${a.localTotal}  レア: ${a.rareReady ? "OK" : "LOADING"}  (${viewportProfile === "portrait" ? "縦長" : "横長"})`,
+      tx,
+      ty
+    );
 
-    const b = getStartButtonRect();
     ctx.globalAlpha = ready ? 1.0 : 0.45;
 
     const grad = ctx.createLinearGradient(b.x, b.y, b.x + b.w, b.y);
@@ -481,8 +572,8 @@ export function startGame() {
     roundRect(ctx, b.x, b.y, b.w, b.h, 14);
 
     ctx.fillStyle = "rgba(8,10,18,0.92)";
-    ctx.font = '900 16px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif';
-    ctx.fillText(ready ? "START" : "LOADING...", b.x + 42, b.y + 28);
+    ctx.font = `900 ${Math.round(16 * fs)}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.fillText(ready ? "START" : "LOADING...", b.x + b.w * 0.28, b.y + b.h * 0.64);
     ctx.globalAlpha = 1.0;
   }
 
@@ -819,6 +910,7 @@ export function startGame() {
   }
 
   // ===== 起動 =====
+  applyViewport(viewportProfile);
   scoreEl.textContent = "SCORE: 0";
   statusEl.textContent = "LOADING...";
   requestAnimationFrame(loop);

@@ -10,6 +10,27 @@ try {
   document.documentElement.classList.toggle("embed", !!embed);
 } catch {}
 
+// 画面が縦長（スマホ想定）なら portrait モードにする
+// - URLに ?portrait=1 / ?landscape=1 で強制も可能
+function updateViewportModeClass() {
+  try {
+    const qs = new URLSearchParams(location.search);
+    const forcedPortrait = qs.get("portrait") === "1";
+    const forcedLandscape = qs.get("landscape") === "1";
+    const portrait =
+      forcedPortrait ||
+      (!forcedLandscape &&
+        (window.matchMedia?.("(orientation: portrait)")?.matches ?? (innerHeight >= innerWidth)));
+    document.documentElement.classList.toggle("portrait", !!portrait);
+  } catch {}
+}
+updateViewportModeClass();
+let resizeTimer = 0;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(updateViewportModeClass, 120);
+});
+
 const statusEl = document.getElementById("status");
 const setStatus = (m) => (statusEl.textContent = m);
 
