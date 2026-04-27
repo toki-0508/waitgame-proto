@@ -75,6 +75,8 @@ export function startGame() {
       MISS_PENALTY_POINTS: 1,
     },
     FALL: {
+      // 「降ってくる速さ」全体の倍率（80%なら 0.8）
+      GLOBAL_SPEED_MUL: 0.8,
       SPEED_BASE: 190,
       SPEED_ADD_BY_DIFFICULTY: 110,
       SPEED_ADD_BY_SCORE_FACTOR: 1.2,
@@ -323,7 +325,7 @@ export function startGame() {
     const d = difficulty01();
     const addByScore = Math.min(scoreNow * CONFIG.FALL.SPEED_ADD_BY_SCORE_FACTOR, CONFIG.FALL.SPEED_ADD_BY_SCORE_CAP);
     const v = CONFIG.FALL.SPEED_BASE + d * CONFIG.FALL.SPEED_ADD_BY_DIFFICULTY + addByScore;
-    return v * TUNE.FALL_SPEED_MUL;
+    return v * TUNE.FALL_SPEED_MUL * CONFIG.FALL.GLOBAL_SPEED_MUL;
   }
 
   function rand(min, max) {
