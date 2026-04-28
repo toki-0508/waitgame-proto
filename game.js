@@ -30,7 +30,18 @@
  */
 
 export function startGame() {
-  const ALLOWED_PARENT_ORIGIN = "*";
+  const parentWindow = window.parent && window.parent !== window ? window.parent : null;
+  const parentOrigin = (() => {
+    // iframe 埋め込み時は referrer から親originを推定して、postMessage の targetOrigin を絞る
+    try {
+      if (!parentWindow) return null;
+      if (!document.referrer) return null;
+      return new URL(document.referrer).origin;
+    } catch {
+      return null;
+    }
+  })();
+  const ALLOWED_PARENT_ORIGIN = parentOrigin ?? "*";
 
   const MESSAGE = {
     RESIZE: "RESIZE",
@@ -275,6 +286,10 @@ export function startGame() {
 
   // ===== 親→子：待ち終了 =====
   window.addEventListener("message", (ev) => {
+    // 親以外からの message は無視（WAIT_DONE などの誤作動防止）
+    if (parentWindow && ev.source !== parentWindow) return;
+    if (parentOrigin && ev.origin !== parentOrigin) return;
+
     const data = ev.data;
     if (!data || typeof data !== "object") return;
     if (data.type === MESSAGE.WAIT_DONE) {
