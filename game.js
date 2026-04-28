@@ -1,11 +1,53 @@
 // game.js
+
+/**
+ * @typedef {"landscape" | "portrait"} ViewportProfile
+ *
+ * @typedef {Object} ViewportTune
+ * @property {number} BASE_W
+ * @property {number} BASE_H
+ * @property {number} PLAYER_SPEED_MUL
+ * @property {number} PLAYER_SIZE_MUL
+ * @property {number} ITEM_SIZE_MUL
+ * @property {number} FALL_SPEED_MUL
+ * @property {number} SPAWN_INTERVAL_MUL
+ * @property {number} BOMB_RATE_MUL
+ * @property {number} SAFE_TIME_MUL
+ *
+ * @typedef {Object} CharacterDef
+ * @property {string} id
+ * @property {string} label
+ * @property {string|null} src
+ * @property {number} spawnWeight
+ * @property {number} points
+ * @property {boolean=} isRare
+ *
+ * @typedef {Object} SpriteSlot
+ * @property {HTMLImageElement|null} img
+ * @property {boolean} ready
+ * @property {boolean=} loading
+ * @property {string|null} src
+ */
+
 export function startGame() {
   const ALLOWED_PARENT_ORIGIN = "*";
+
+  const MESSAGE = {
+    RESIZE: "RESIZE",
+    SCORE: "SCORE",
+    GAME_OVER: "GAME_OVER",
+    WAIT_DONE: "WAIT_DONE",
+    WAIT_DONE_ACK: "WAIT_DONE_ACK",
+  };
 
   /* ==========================
      ここは後で調整するパラメータ
      ========================== */
+  /** @type {Record<ViewportProfile, ViewportTune>} */
   const PROFILE_TUNING = {
+    // 画面の縦横（PC/スマホ）で “ゲーム内の体感” を合わせるための倍率群
+    // - 画面比率自体は CSS 側（style.css）の `html.portrait` で切り替え
+    // - ここは「落下の速さ」「生成間隔」「操作感」などのゲームパラメータ調整
     // PC（横長）想定
     landscape: {
       BASE_W: 720,
@@ -32,6 +74,7 @@ export function startGame() {
     },
   };
 
+  /** @returns {ViewportProfile} */
   function detectViewportProfile() {
     const qs = new URLSearchParams(location.search);
     if (qs.get("portrait") === "1") return "portrait";
@@ -40,6 +83,7 @@ export function startGame() {
     return "landscape";
   }
 
+  /** @type {ViewportProfile} */
   let viewportProfile = detectViewportProfile();
   let TUNE = PROFILE_TUNING[viewportProfile] ?? PROFILE_TUNING.landscape;
   let BASE_W = TUNE.BASE_W;
@@ -97,6 +141,7 @@ export function startGame() {
     },
   };
 
+  /** @type {CharacterDef[]} */
   const LOCAL_CHARACTERS = [
     { id: "character1", label: "character1", src: "./img/character1.png", spawnWeight: 1.0, points: 10 },
     { id: "character2", label: "character2", src: "./img/character2.png", spawnWeight: 1.0, points: 10 },
@@ -109,6 +154,7 @@ export function startGame() {
     { id: "character9", label: "character9", src: "./img/character9.png", spawnWeight: 0.6, points: 18 },
   ];
 
+  /** @type {CharacterDef} */
   const RARE_CHARACTER = {
     id: "rare",
     label: "レア",
@@ -126,7 +172,7 @@ export function startGame() {
   const overlayEl = document.getElementById("overlay");
   const containerEl = document.getElementById("container");
 
-  // ===== 背景：background.png（同階層）=====
+  // ===== 背景：img/background.png =====
   const bg = new Image();
   let bgReady = false;
   bg.onload = () => (bgReady = true);
@@ -140,7 +186,7 @@ export function startGame() {
   }
   function sendResize() {
     const h = Math.ceil(containerEl.getBoundingClientRect().height);
-    postToParent("RESIZE", { height: h });
+    postToParent(MESSAGE.RESIZE, { height: h });
   }
   const ro = new ResizeObserver(() => sendResize());
   ro.observe(containerEl);
@@ -231,7 +277,7 @@ export function startGame() {
   window.addEventListener("message", (ev) => {
     const data = ev.data;
     if (!data || typeof data !== "object") return;
-    if (data.type === "WAIT_DONE") {
+    if (data.type === MESSAGE.WAIT_DONE) {
       stopped = true;
       showOverlayDone("待ちが完了しました");
     }
@@ -248,9 +294,11 @@ export function startGame() {
     }, 120);
   });
 
-  // ===== 画像ロード（ローカル10枚 + レア1枚）=====
-  const sprites = new Map(); // id -> { img, ready }
+  // ===== 画像ロード（ローカル9枚 + レア1枚）=====
+  /** @type {Map<string, SpriteSlot>} */
+  const sprites = new Map(); // id -> { img, ready, loading?, src }
 
+  /** @param {CharacterDef} def @returns {SpriteSlot} */
   function ensureSprite(def) {
     if (!sprites.has(def.id)) sprites.set(def.id, { img: null, ready: false, src: def.src });
     return sprites.get(def.id);
@@ -291,6 +339,7 @@ export function startGame() {
     const img = await loadImage(url);
     slot.img = img;
     slot.ready = !!img;
+    characterPool.rebuild();
   }
 
   function getAssetStatus() {
@@ -335,28 +384,53 @@ export function startGame() {
     return Math.abs(ax - bx) * 2 < aw + bw && Math.abs(ay - by) * 2 < ah + bh;
   }
 
-  function weightedPick(defs) {
-    let sum = 0;
-    for (const d of defs) sum += Math.max(0, d.spawnWeight ?? 0);
-    if (sum <= 0) return null;
-    let r = Math.random() * sum;
-    for (const d of defs) {
-      r -= Math.max(0, d.spawnWeight ?? 0);
-      if (r <= 0) return d;
-    }
-    return defs[defs.length - 1] ?? null;
-  }
+  /**
+   * 出現候補（通常9体 + 読み込み完了したレア）を重み付きで選ぶためのプール
+   * - rare の読み込み完了タイミングで rebuild() する
+   */
+  const characterPool = createWeightedCharacterPool();
 
-  function availableCharacters() {
-    const out = [];
-    for (const d of LOCAL_CHARACTERS) {
-      if ((d.spawnWeight ?? 0) <= 0) continue;
-      out.push(d);
+  function createWeightedCharacterPool() {
+    /** @type {CharacterDef[]} */
+    let pool = [];
+    /** @type {{def: CharacterDef, cumulative: number}[]} */
+    let cumulative = [];
+    let total = 0;
+
+    function rebuild() {
+      pool = [];
+
+      for (const d of LOCAL_CHARACTERS) {
+        const w = Math.max(0, d.spawnWeight ?? 0);
+        if (w <= 0) continue;
+        pool.push(d);
+      }
+
+      const rareSlot = sprites.get(RARE_CHARACTER.id);
+      if (rareSlot?.ready) {
+        const w = Math.max(0, RARE_CHARACTER.spawnWeight ?? 0);
+        if (w > 0) pool.push(RARE_CHARACTER);
+      }
+
+      cumulative = [];
+      total = 0;
+      for (const def of pool) {
+        total += Math.max(0, def.spawnWeight ?? 0);
+        cumulative.push({ def, cumulative: total });
+      }
     }
 
-    const rareSlot = sprites.get(RARE_CHARACTER.id);
-    if (rareSlot?.ready && (RARE_CHARACTER.spawnWeight ?? 0) > 0) out.push(RARE_CHARACTER);
-    return out;
+    function pick() {
+      if (total <= 0) return null;
+      const r = Math.random() * total;
+      for (const it of cumulative) {
+        if (r <= it.cumulative) return it.def;
+      }
+      return cumulative[cumulative.length - 1]?.def ?? null;
+    }
+
+    rebuild();
+    return { rebuild, pick };
   }
 
   function spawnDrop() {
@@ -380,8 +454,7 @@ export function startGame() {
       return;
     }
 
-    const pool = availableCharacters();
-    const def = weightedPick(pool);
+    const def = characterPool.pick();
     const spriteSlot = def ? sprites.get(def.id) : null;
 
     drops.push({
@@ -435,7 +508,7 @@ export function startGame() {
 
     if (score - lastPostedScore >= CONFIG.HUD.POST_SCORE_EVERY_POINTS) {
       lastPostedScore = score;
-      postToParent("SCORE", { score });
+      postToParent(MESSAGE.SCORE, { score });
     }
   }
 
@@ -693,7 +766,7 @@ export function startGame() {
   function showOverlayGameOver(msg) {
     running = false;
     statusEl.textContent = "GAME OVER";
-    postToParent("GAME_OVER", { score });
+    postToParent(MESSAGE.GAME_OVER, { score });
 
     overlayEl.style.display = "flex";
     overlayEl.style.pointerEvents = "auto";
@@ -703,7 +776,7 @@ export function startGame() {
   function showOverlayDone(msg) {
     running = false;
     statusEl.textContent = "DONE";
-    postToParent("WAIT_DONE_ACK", { score });
+    postToParent(MESSAGE.WAIT_DONE_ACK, { score });
 
     overlayEl.style.display = "flex";
     overlayEl.style.pointerEvents = "auto";

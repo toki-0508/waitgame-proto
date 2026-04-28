@@ -23,3 +23,7 @@ python3 -m http.server 8080 --bind 127.0.0.1
 - 出現確率・ポイント: `game.js` の `LOCAL_CHARACTERS` / `RARE_CHARACTER`
 - 速度・生成間隔など: `game.js` の `CONFIG`
 
+## 埋め込み（既存サイトに載せる）
+
+- `?embed=1` : 外側の背景/余白を抑えた埋め込み向け表示
+- `?portrait=1` / `?landscape=1` : 縦長/横長の表示・ゲーム調整を強制
