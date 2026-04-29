@@ -12,6 +12,8 @@
 
 レア画像（Firebase Storage）取得の確認をしたい場合は、ローカルサーバで開くのがおすすめです。
 
+Firebase Storage を使う場合は、先に `firebase_config.example.js` を `firebase_config.js` にコピーして、自分のFirebase Web設定を入れてください。`firebase_config.js` はGit管理しません。本番のGitHub Pagesでは、GitHub Actionsが `FIREBASE_CONFIG_JSON` Secret から生成します。
+
 ```bash
 python3 -m http.server 8080 --bind 127.0.0.1
 ```
@@ -213,4 +215,4 @@ if (event.origin !== "https://toki-0508.github.io") return;
 waitgameFrame.contentWindow?.postMessage({ type: "WAIT_DONE" }, "https://toki-0508.github.io");
 ```
 
-FirebaseのWeb用 `firebaseConfig` は公開される前提の設定です。秘密鍵ではありませんが、Storage / Firestore の Security Rules が開放されていると危険なので、Firebase側のRulesは別途確認してください。
+FirebaseのWeb用 `firebaseConfig` は公開される前提の設定です。秘密鍵ではありません。ただしGitHub Secret scanningではGoogle API Keyとして検出されるため、このリポジトリでは `firebase_config.js` をコミットせず、GitHub Pagesのビルド時に `FIREBASE_CONFIG_JSON` から生成します。Storage / Firestore の Security Rules が開放されていると危険なので、Firebase側のRulesは別途確認してください。

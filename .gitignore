@@ -5,3 +5,6 @@ Thumbs.db
 # Editor / OS
 .vscode/
 
+# Local Firebase runtime config.
+# GitHub Pages generates this from the FIREBASE_CONFIG_JSON repository secret.
+firebase_config.js
