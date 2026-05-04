@@ -105,8 +105,8 @@ export function startGame() {
       SECONDS_TO_MAX: 60,
     },
     PLAYER: {
-      WIDTH: 52,
-      HEIGHT: 18,
+      WIDTH: 112,
+      HEIGHT: 26,
       Y_RATIO: 0.82,
       SPEED: 520,
       FOLLOW: 14,
@@ -118,7 +118,7 @@ export function startGame() {
       INTERVAL_SEC_MIN: 0.18,
     },
     BOMB: {
-      SAFE_TIME_SEC: 1.0,
+      SAFE_TIME_SEC: 5.0,
       RATE_BASE: 0.22,
       RATE_ADD_BY_DIFFICULTY: 0.22,
       SIZE_MIN: 28,
@@ -154,15 +154,15 @@ export function startGame() {
 
   /** @type {CharacterDef[]} */
   const LOCAL_CHARACTERS = [
-    { id: "character1", label: "character1", src: "./img/character1.png", spawnWeight: 1.0, points: 10 },
-    { id: "character2", label: "character2", src: "./img/character2.png", spawnWeight: 1.0, points: 10 },
-    { id: "character3", label: "character3", src: "./img/character3.png", spawnWeight: 1.0, points: 10 },
-    { id: "character4", label: "character4", src: "./img/character4.png", spawnWeight: 0.9, points: 12 },
-    { id: "character5", label: "character5", src: "./img/character5.png", spawnWeight: 0.9, points: 12 },
-    { id: "character6", label: "character6", src: "./img/character6.png", spawnWeight: 0.8, points: 14 },
-    { id: "character7", label: "character7", src: "./img/character7.png", spawnWeight: 0.8, points: 14 },
-    { id: "character8", label: "character8", src: "./img/character8.png", spawnWeight: 0.7, points: 16 },
-    { id: "character9", label: "character9", src: "./img/character9.png", spawnWeight: 0.6, points: 18 },
+    { id: "character1", label: "ピンクちゃん", src: "./img/character1.png", spawnWeight: 1.0, points: 10 },
+    { id: "character2", label: "ぶたまる", src: "./img/character2.png", spawnWeight: 1.0, points: 10 },
+    { id: "character3", label: "もふキュー", src: "./img/character3.png", spawnWeight: 1.0, points: 10 },
+    { id: "character4", label: "えかきっこ", src: "./img/character4.png", spawnWeight: 0.9, points: 12 },
+    { id: "character5", label: "わんちゃん", src: "./img/character5.png", spawnWeight: 0.9, points: 12 },
+    { id: "character6", label: "ガオーくん", src: "./img/character6.png", spawnWeight: 0.8, points: 14 },
+    { id: "character7", label: "くまさん", src: "./img/character7.png", spawnWeight: 0.8, points: 14 },
+    { id: "character8", label: "ロボット", src: "./img/character8.png", spawnWeight: 0.7, points: 16 },
+    { id: "character9", label: "ねこメガネ", src: "./img/character9.png", spawnWeight: 0.6, points: 18 },
   ];
 
   /** @type {CharacterDef} */
@@ -602,6 +602,100 @@ export function startGame() {
     }
   }
 
+  function drawSceneFrame() {
+    const r = viewportProfile === "portrait" ? 18 : 16;
+    ctx.save();
+    ctx.lineWidth = viewportProfile === "portrait" ? 4 : 3;
+    ctx.strokeStyle = "#fff";
+    ctx.shadowColor = "rgba(0,0,0,0.45)";
+    ctx.shadowBlur = 8;
+    strokeRoundRect(ctx, 2, 2, BASE_W - 4, BASE_H - 4, r);
+    ctx.restore();
+  }
+
+  function drawComicTitle(text, x, y, size, align = "center") {
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    ctx.font = `900 ${size}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = Math.max(7, size * 0.18);
+    ctx.shadowColor = "rgba(0,0,0,0.28)";
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetY = 2;
+    ctx.strokeText(text, x, y);
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = "#e90000";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function drawHudPanel(x, y, w, h, title, value, { accent = "#e90000", icon = "star", smallValue = false } = {}) {
+    ctx.save();
+    ctx.fillStyle = "rgba(255,250,241,0.96)";
+    ctx.strokeStyle = "rgba(112,83,58,0.35)";
+    ctx.lineWidth = 1.4;
+    ctx.shadowColor = "rgba(0,0,0,0.28)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    roundRect(ctx, x, y, w, h, 13);
+    ctx.shadowColor = "transparent";
+    ctx.stroke();
+
+    ctx.fillStyle = accent;
+    ctx.font = `900 ${Math.max(12, h * 0.22)}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(title, x + w * 0.11, y + h * 0.34);
+
+    if (icon === "star") drawSimpleStar(x + w - h * 0.30, y + h * 0.26, h * 0.11, h * 0.22, "#ffd64f");
+    if (icon === "shield") drawShieldIcon(x + w - h * 0.31, y + h * 0.58, h * 0.22);
+    if (icon === "clock") drawClockIcon(x + w * 0.17, y + h * 0.64, h * 0.16);
+
+    ctx.fillStyle = "#2b211b";
+    ctx.font = `900 ${smallValue ? h * 0.25 : h * 0.39}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.textAlign = icon === "clock" ? "right" : "left";
+    const valueX = icon === "clock" ? x + w * 0.86 : x + w * 0.10;
+    ctx.fillText(value, valueX, y + h * 0.76);
+    ctx.restore();
+  }
+
+  function drawGameHud() {
+    const top = viewportProfile === "portrait" ? 14 : 14;
+    if (viewportProfile === "portrait") {
+      drawHudPanel(12, top, 108, 56, "SCORE", padScore(score), { accent: "#e90000", icon: "star" });
+      drawHudPanel(BASE_W / 2 - 60, top, 120, 58, "TIME", elapsedRun.toFixed(1).padStart(4, "0"), {
+        accent: "#2b211b",
+        icon: "clock",
+      });
+      drawHudPanel(BASE_W - 120, top, 108, 56, "STATUS", safeTime > 0 ? "安全時間" : difficultyLabel(), {
+        accent: "#e90000",
+        icon: safeTime > 0 ? "shield" : "star",
+        smallValue: true,
+      });
+      return;
+    }
+
+    drawHudPanel(14, 14, 118, 58, "SCORE", padScore(score), { accent: "#e90000", icon: "star" });
+    drawHudPanel(BASE_W - 144, 14, 130, 54, "STATUS", safeTime > 0 ? `SAFE ${safeTime.toFixed(1)}` : difficultyLabel(), {
+      accent: "#2b211b",
+      icon: safeTime > 0 ? "shield" : "star",
+      smallValue: true,
+    });
+  }
+
+  function difficultyLabel() {
+    const d = difficulty01();
+    if (d < 0.35) return "やさしい";
+    if (d < 0.72) return "ふつう";
+    return "むずかしい";
+  }
+
+  function padScore(v) {
+    return String(Math.max(0, v | 0)).padStart(6, "0");
+  }
+
   function getStartButtonRect() {
     const w = clamp(BASE_W * 0.30, 150, 240);
     const h = clamp(BASE_H * 0.075, 44, 62);
@@ -610,79 +704,280 @@ export function startGame() {
   }
 
   function drawRulesScreen() {
+    drawSceneFrame();
+    drawStartDecorations();
+
+    if (viewportProfile === "portrait") {
+      drawHudPanel(16, 14, 108, 58, "SCORE", "000000", { accent: "#e90000", icon: "star" });
+      drawHudPanel(BASE_W - 130, 14, 114, 58, "STATUS", `SAFE ${CONFIG.BOMB.SAFE_TIME_SEC.toFixed(1)}`, {
+        accent: "#ff7a00",
+        icon: "clock",
+        smallValue: true,
+      });
+      drawComicTitle("キャラ", BASE_W / 2, 72, 44);
+      drawComicTitle("キャッチ!", BASE_W / 2, 118, 44);
+      drawPillText(BASE_W * 0.18, 140, BASE_W * 0.64, 28, "生成中にあそべるミニゲーム！");
+      drawPortraitRulesCard();
+      drawStartButton();
+      drawBottomOperationGuide();
+      return;
+    }
+
+    drawHudPanel(14, 14, 118, 58, "SCORE", "000000", { accent: "#e90000", icon: "star" });
+    drawHudPanel(BASE_W - 144, 15, 130, 54, "STATUS", `SAFE ${CONFIG.BOMB.SAFE_TIME_SEC.toFixed(1)}`, {
+      accent: "#ff7a00",
+      icon: "clock",
+      smallValue: true,
+    });
+    drawComicTitle("キャラ", BASE_W / 2, 72, 50);
+    drawComicTitle("キャッチ!", BASE_W / 2, 123, 50);
+    drawPillText(BASE_W / 2 - 142, 145, 284, 28, "生成中にあそべるミニゲーム！");
+    drawLandscapeRulesCard();
+    drawStartButton();
+  }
+
+  function drawStartDecorations() {
+    const sideScale = viewportProfile === "portrait" ? 1.0 : 0.74;
+    drawStickerCharacter("character1", BASE_W * 0.12, BASE_H * 0.20, 66 * sideScale, -0.12);
+    drawStickerCharacter("character2", BASE_W * 0.10, BASE_H * 0.48, 64 * sideScale, 0.08);
+    drawStickerCharacter("character3", BASE_W * 0.20, BASE_H * 0.62, 74 * sideScale, -0.05);
+    drawStickerCharacter("character4", BASE_W * 0.79, BASE_H * 0.25, 72 * sideScale, 0.10);
+    drawStickerCharacter("character6", BASE_W * 0.90, BASE_H * 0.26, 76 * sideScale, 0.14);
+    drawStickerCharacter("character9", BASE_W * 0.86, BASE_H * 0.58, 74 * sideScale, -0.08);
+    drawStickerCharacter("character8", BASE_W * 0.90, BASE_H * 0.78, 62 * sideScale, 0.10);
+
+    drawSimpleStar(BASE_W * 0.23, BASE_H * 0.16, 6, 14, "#ffd64f");
+    drawSimpleStar(BASE_W * 0.74, BASE_H * 0.16, 6, 14, "#ffd64f");
+    drawSimpleStar(BASE_W * 0.84, BASE_H * 0.84, 5, 12, "#ffd64f");
+    drawComicMark(BASE_W * 0.33, BASE_H * 0.16, 20, -0.7);
+    drawComicMark(BASE_W * 0.69, BASE_H * 0.20, 18, 0.8);
+  }
+
+  function drawLandscapeRulesCard() {
+    const x = BASE_W * 0.20;
+    const y = BASE_H * 0.39;
+    const w = BASE_W * 0.60;
+    const h = BASE_H * 0.29;
+    drawCreamPanel(x, y, w, h, 15);
+    drawRuleItem(x + 34, y + 38, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めて高得点をめざそう！");
+    drawRuleItem(x + w * 0.53, y + 38, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "ボムをキャッチするとゲームオーバー！");
+    drawRuleItem(x + 34, y + h * 0.67, "💧", "#42a9e8", "取り逃すと少しだけ減点…", "キャラを取り逃すとスコアが少し減っちゃうよ！");
+    drawRuleItem(x + w * 0.53, y + h * 0.67, "盾", "#4aa34a", "最初の5秒はセーフタイム！", "ボムは出てこないので安心してプレイできるよ！");
+  }
+
+  function drawPortraitRulesCard() {
+    const x = 22;
+    const y = 165;
+    const w = BASE_W - 44;
+    const h = 220;
+    drawCreamPanel(x, y, w, h, 13);
+    drawRuleItem(x + 26, y + 40, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めよう！");
+    drawRuleItem(x + 26, y + 95, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "当たるとゲームオーバー！");
+    drawRuleItem(x + 26, y + 150, "💧", "#42a9e8", "取り逃すと少しだけ減点…", "落ちたキャラは少し減点！");
+    drawRuleItem(x + 26, y + 205, "盾", "#4aa34a", "最初の5秒はセーフタイム！", "安心してスタートできるよ！");
+  }
+
+  function drawStartButton() {
     const b = getStartButtonRect();
-    const marginX = clamp(BASE_W * 0.10, 16, 110);
-    const cardY = clamp(BASE_H * 0.12, 28, 110);
-    const cardX = marginX;
-    const cardW = BASE_W - marginX * 2;
-    const cardBottom = b.y - clamp(BASE_H * 0.08, 26, 44);
-    const cardH = Math.max(170, cardBottom - cardY);
-
-    ctx.fillStyle = "rgba(0,0,0,0.42)";
-    roundRect(ctx, cardX, cardY, cardW, cardH, 18);
-
-    const fs = clamp(BASE_W / 720, 0.88, 1.05);
-    const titleSize = Math.round(18 * fs);
-    const bodySize = Math.round(13 * fs);
-    const lineH = Math.round(22 * fs);
-    const tx = cardX + clamp(cardW * 0.06, 14, 26);
-    let ty = cardY + clamp(cardH * 0.18, 34, 56);
-
+    ctx.save();
+    ctx.globalAlpha = ready ? 1 : 0.5;
     ctx.fillStyle = "#fff";
-    ctx.globalAlpha = 0.96;
-    ctx.font = `900 ${titleSize}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
-    ctx.fillText("ルール", tx, ty);
-
-    ctx.font = `${bodySize}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ty += lineH + Math.round(6 * fs);
-    ctx.fillText("・キャラを集めてポイントを稼ぐ", tx, ty);
-    ty += lineH;
-    ctx.fillText("・爆弾に当たるとゲームオーバー", tx, ty);
-    ty += lineH;
-    ctx.fillText("・左右移動：スワイプ / ← → キー", tx, ty);
-    ty += lineH;
-    ctx.fillText("・レアキャラは低確率で出現（高得点）", tx, ty);
-
-    const a = getAssetStatus();
-    ty += lineH;
-    ctx.fillStyle = "rgba(255,255,255,0.80)";
-    ctx.fillText(
-      `・画像: ${a.localReady}/${a.localTotal}  レア: ${a.rareReady ? "OK" : "LOADING"}  (${viewportProfile === "portrait" ? "縦長" : "横長"})`,
-      tx,
-      ty
-    );
-
-    ctx.globalAlpha = ready ? 1.0 : 0.45;
-
-    const grad = ctx.createLinearGradient(b.x, b.y, b.x + b.w, b.y);
-    grad.addColorStop(0, "rgba(124,92,255,1)");
-    grad.addColorStop(1, "rgba(39,214,255,1)");
+    roundRect(ctx, b.x - 4, b.y - 4, b.w + 8, b.h + 8, b.h / 2 + 4);
+    const grad = ctx.createLinearGradient(b.x, b.y, b.x + b.w, b.y + b.h);
+    grad.addColorStop(0, "#ff1717");
+    grad.addColorStop(1, "#d40000");
     ctx.fillStyle = grad;
-    roundRect(ctx, b.x, b.y, b.w, b.h, 14);
+    roundRect(ctx, b.x, b.y, b.w, b.h, b.h / 2);
+    ctx.strokeStyle = "rgba(80,20,20,0.25)";
+    ctx.lineWidth = 2;
+    strokeRoundRect(ctx, b.x, b.y, b.w, b.h, b.h / 2);
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `900 ${Math.min(28, b.h * 0.52)}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.fillText(ready ? "START!" : "LOADING...", b.x + b.w / 2, b.y + b.h / 2 + 1);
+    ctx.restore();
+  }
 
-    ctx.fillStyle = "rgba(8,10,18,0.92)";
-    ctx.font = `900 ${Math.round(16 * fs)}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
-    ctx.fillText(ready ? "START" : "LOADING...", b.x + b.w * 0.28, b.y + b.h * 0.64);
-    ctx.globalAlpha = 1.0;
+  function drawBottomOperationGuide() {
+    const h = 96;
+    const y = BASE_H - h;
+    ctx.fillStyle = "rgba(255,250,241,0.98)";
+    ctx.fillRect(0, y, BASE_W, h);
+    ctx.strokeStyle = "rgba(80,55,35,0.16)";
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(BASE_W, y);
+    ctx.stroke();
+    drawOperationMini(BASE_W * 0.22, y + 48, "スワイプ / ドラッグ", "左右に動かそう！");
+    drawOperationMini(BASE_W * 0.72, y + 48, "A / D", "または左右に動かそう！");
+  }
+
+  function drawCreamPanel(x, y, w, h, r) {
+    ctx.save();
+    ctx.fillStyle = "rgba(255,250,241,0.96)";
+    ctx.strokeStyle = "rgba(210,166,106,0.42)";
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = "rgba(0,0,0,0.20)";
+    ctx.shadowBlur = 9;
+    ctx.shadowOffsetY = 4;
+    roundRect(ctx, x, y, w, h, r);
+    ctx.shadowColor = "transparent";
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPillText(x, y, w, h, text) {
+    ctx.save();
+    ctx.fillStyle = "rgba(255,250,241,0.94)";
+    ctx.strokeStyle = "rgba(217,171,102,0.35)";
+    ctx.lineWidth = 1.2;
+    roundRect(ctx, x, y, w, h, h / 2);
+    ctx.stroke();
+    drawSimpleStar(x + 24, y + h / 2, 4, 9, "#ffd64f");
+    drawSimpleStar(x + w - 24, y + h / 2, 4, 9, "#ffd64f");
+    ctx.fillStyle = "#2b211b";
+    ctx.font = `900 ${Math.max(13, h * 0.46)}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+    ctx.restore();
+  }
+
+  function drawRuleItem(x, y, icon, iconColor, title, body) {
+    ctx.save();
+    const iconSize = viewportProfile === "portrait" ? 22 : 26;
+    if (icon === "盾") drawShieldIcon(x, y - 2, iconSize * 0.78);
+    else if (icon === "☠") drawBomb(x, y, iconSize * 1.6);
+    else if (icon === "★") drawSimpleStar(x, y, iconSize * 0.35, iconSize * 0.72, iconColor);
+    else {
+      ctx.font = `900 ${iconSize}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = iconColor;
+      ctx.fillText(icon, x, y);
+    }
+
+    const tx = x + (viewportProfile === "portrait" ? 34 : 40);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = title.includes("ボム") ? "#e90000" : title.includes("セーフ") ? "#318c35" : "#2b211b";
+    ctx.font = `900 ${viewportProfile === "portrait" ? 13 : 14}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.fillText(title, tx, y - 4);
+    ctx.fillStyle = "#2b211b";
+    ctx.font = `700 ${viewportProfile === "portrait" ? 11 : 12}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    ctx.fillText(body, tx, y + 16);
+    ctx.restore();
+  }
+
+  function drawStickerCharacter(id, x, y, maxSize, rot = 0) {
+    const slot = sprites.get(id);
+    const img = slot?.img;
+    if (!img) return;
+    const { dw, dh } = fitImageToBox(img, maxSize, maxSize);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.shadowColor = "rgba(0,0,0,0.30)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+    ctx.restore();
+  }
+
+  function drawComicMark(x, y, size, rot) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.6, -size * 0.4);
+    ctx.lineTo(size * 0.5, size * 0.45);
+    ctx.moveTo(-size * 0.35, size * 0.6);
+    ctx.lineTo(size * 0.62, size * 0.92);
+    ctx.stroke();
+    ctx.strokeStyle = "#2b211b";
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawOperationMini(x, y, title, body) {
+    ctx.save();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    if (title.includes("A")) {
+      drawKeycap(x - 52, y - 4, "A");
+      drawKeycap(x - 16, y - 4, "D");
+      x += 28;
+    } else {
+      ctx.strokeStyle = "#e90000";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 58, y - 18);
+      ctx.lineTo(x - 24, y - 18);
+      ctx.stroke();
+      ctx.fillStyle = "#e90000";
+      ctx.font = "900 22px system-ui";
+      ctx.fillText("↔", x - 60, y - 18);
+      x -= 10;
+    }
+    ctx.fillStyle = "#2b211b";
+    ctx.font = "900 15px system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans JP', sans-serif";
+    ctx.fillText(title, x, y - 12);
+    ctx.font = "800 13px system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans JP', sans-serif";
+    ctx.fillText(body, x, y + 12);
+    ctx.restore();
+  }
+
+  function drawKeycap(x, y, label) {
+    ctx.save();
+    ctx.fillStyle = "#3a3a3a";
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y - 18, 28, 28, 5);
+    ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "900 16px system-ui";
+    ctx.fillText(label, x + 14, y - 4);
+    ctx.restore();
   }
 
   function drawPlayer() {
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = "#000";
-    roundRect(ctx, player.x - player.w / 2 + 2, player.y - player.h / 2 + 3, player.w, player.h, 9);
-    ctx.globalAlpha = 1.0;
-
-    const grad = ctx.createLinearGradient(
-      player.x - player.w / 2,
-      player.y - player.h / 2,
-      player.x + player.w / 2,
-      player.y + player.h / 2
-    );
-    grad.addColorStop(0, "rgba(255,255,255,0.96)");
-    grad.addColorStop(1, "rgba(210,220,255,0.96)");
+    const x = player.x - player.w / 2;
+    const y = player.y - player.h / 2;
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = "#fff";
+    roundRect(ctx, x - 5, y - 5, player.w + 10, player.h + 10, player.h);
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = "#111";
+    roundRect(ctx, x - 2, y - 2, player.w + 4, player.h + 4, player.h);
+    ctx.fillStyle = "#fff";
+    roundRect(ctx, x + 1, y + 1, player.w - 2, player.h - 2, player.h);
+    const grad = ctx.createLinearGradient(x, y, x + player.w, y + player.h);
+    grad.addColorStop(0, "#ff2a16");
+    grad.addColorStop(1, "#f00000");
     ctx.fillStyle = grad;
-    roundRect(ctx, player.x - player.w / 2, player.y - player.h / 2, player.w, player.h, 9);
+    roundRect(ctx, x + 8, y + 6, player.w - 16, player.h - 12, player.h * 0.35);
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = "#ffcc75";
+    for (let sx = x + 12; sx < x + player.w - 12; sx += 16) {
+      ctx.beginPath();
+      ctx.moveTo(sx, y + 6);
+      ctx.lineTo(sx + 8, y + 6);
+      ctx.lineTo(sx - 1, y + player.h - 6);
+      ctx.lineTo(sx - 9, y + player.h - 6);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   function drawDropChara(d) {
@@ -691,6 +986,7 @@ export function startGame() {
       if (slot?.ready) d.sprite = slot.img;
     }
 
+    drawFallLines(d.x, d.y, d.h);
     const hasSprite = !!d.sprite;
     if (hasSprite) {
       ctx.save();
@@ -707,6 +1003,24 @@ export function startGame() {
     }
 
     drawPlaceholderChara(d.x, d.y, d.w, d.isRare);
+  }
+
+  function drawFallLines(x, y, size) {
+    ctx.save();
+    ctx.globalAlpha = 0.52;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = Math.max(2, size * 0.035);
+    ctx.lineCap = "round";
+    for (let i = -1; i <= 1; i++) {
+      const lx = x + i * size * 0.22;
+      const top = y - size * 1.25 - Math.abs(i) * size * 0.18;
+      const bottom = y - size * 0.58;
+      ctx.beginPath();
+      ctx.moveTo(lx, top);
+      ctx.lineTo(lx, bottom);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawSparkle(cx, cy, size, t) {
@@ -761,19 +1075,17 @@ export function startGame() {
       return;
     }
 
-    drawPlayer();
-
     for (const d of drops) {
       if (d.type === "bomb") drawBomb(d.x, d.y, d.w);
       else drawDropChara(d);
     }
 
+    drawPlayer();
+    drawGameHud();
+    drawSceneFrame();
+
     if (safeTime > 0) {
-      ctx.globalAlpha = 0.88;
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
-      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif';
-      ctx.fillText("スタート直後は爆弾なし!", 12, 26);
-      ctx.globalAlpha = 1;
+      drawPillText(BASE_W / 2 - 82, viewportProfile === "portrait" ? 82 : 78, 164, 24, "安全時間");
     }
   }
 
@@ -798,18 +1110,18 @@ export function startGame() {
     overlayEl.replaceChildren(buildResultCard(msg, { hideRetry: true }));
   }
 
-  function buildResultCard(title, { hideRetry = false } = {}) {
+  function buildResultCard(reason, { hideRetry = false } = {}) {
     const card = document.createElement("div");
     card.className = "overlayCard";
 
     const t = document.createElement("div");
     t.className = "overlayTitle";
-    t.textContent = title;
+    t.textContent = "ゲーム結果";
     card.appendChild(t);
 
     const sub = document.createElement("div");
     sub.className = "overlaySubtitle";
-    sub.textContent = "集めたキャラクターの内訳";
+    sub.textContent = `${reason}　結果を確認してね。`;
     card.appendChild(sub);
 
     const table = document.createElement("table");
@@ -829,7 +1141,7 @@ export function startGame() {
     const rows = buildScoreRows();
     if (!rows.length) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="4" style="color: rgba(238,242,255,.78);">まだ何も集められていない…</td>`;
+      tr.innerHTML = `<td colspan="4" class="emptyResult">まだ何も集められていない…</td>`;
       tbody.appendChild(tr);
     } else {
       for (const r of rows) tbody.appendChild(r);
@@ -839,12 +1151,12 @@ export function startGame() {
 
     const total = document.createElement("div");
     total.className = "resultTotal";
-    total.innerHTML = `<span>最終スコア</span><strong>${score} pt</strong>`;
+    total.innerHTML = `<span>合計スコア</span><strong>${score.toLocaleString()} pt</strong>`;
     card.appendChild(total);
 
     const hint = document.createElement("div");
     hint.className = "hint";
-    hint.textContent = "※ パラメータ（確率/速度/ポイント）は game.js の CONFIG / LOCAL_CHARACTERS を編集して調整できます。";
+    hint.textContent = "おつかれさまでした！集めたキャラのポイントを確認してね。";
     card.appendChild(hint);
 
     if (!hideRetry) {
@@ -853,7 +1165,7 @@ export function startGame() {
       const retry = document.createElement("button");
       retry.className = "btn";
       retry.type = "button";
-      retry.textContent = "もう一回";
+      retry.textContent = "↻ もう一回";
       retry.addEventListener("click", () => startRun());
       row.appendChild(retry);
       card.appendChild(row);
@@ -993,6 +1305,79 @@ export function startGame() {
     ctx2.arcTo(x, y, x + w, y, rr);
     ctx2.closePath();
     ctx2.fill();
+  }
+
+  function strokeRoundRect(ctx2, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx2.beginPath();
+    ctx2.moveTo(x + rr, y);
+    ctx2.arcTo(x + w, y, x + w, y + h, rr);
+    ctx2.arcTo(x + w, y + h, x, y + h, rr);
+    ctx2.arcTo(x, y + h, x, y, rr);
+    ctx2.arcTo(x, y, x + w, y, rr);
+    ctx2.closePath();
+    ctx2.stroke();
+  }
+
+  function drawSimpleStar(x, y, r0, r1, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = Math.max(2, r1 * 0.22);
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 === 0 ? r1 : r0;
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      const px = x + Math.cos(a) * r;
+      const py = y + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawShieldIcon(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = "#51ad45";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = Math.max(2, size * 0.15);
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size * 0.82, -size * 0.55);
+    ctx.lineTo(size * 0.68, size * 0.45);
+    ctx.quadraticCurveTo(0, size, -size * 0.68, size * 0.45);
+    ctx.lineTo(-size * 0.82, -size * 0.55);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    drawSimpleStar(0, -size * 0.10, size * 0.18, size * 0.40, "#fff");
+    ctx.restore();
+  }
+
+  function drawClockIcon(x, y, size) {
+    ctx.save();
+    ctx.strokeStyle = "#2b211b";
+    ctx.fillStyle = "#fff";
+    ctx.lineWidth = Math.max(2, size * 0.14);
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - size * 0.62);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + size * 0.45, y + size * 0.18);
+    ctx.stroke();
+    ctx.fillStyle = "#e90000";
+    ctx.beginPath();
+    ctx.arc(x + size * 0.45, y + size * 0.18, size * 0.13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   function clamp(v, min, max) {
