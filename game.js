@@ -1254,7 +1254,11 @@ export function startGame() {
       for (const r of rows) tbody.appendChild(r);
     }
     table.appendChild(tbody);
-    card.appendChild(table);
+
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "resultTableWrap";
+    tableWrap.appendChild(table);
+    card.appendChild(tableWrap);
 
     const total = document.createElement("div");
     total.className = "resultTotal";
