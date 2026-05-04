@@ -729,22 +729,31 @@ export function startGame() {
       icon: "clock",
       smallValue: true,
     });
-    drawComicTitle("キャラ", BASE_W / 2, 72, 50);
-    drawComicTitle("キャッチ!", BASE_W / 2, 123, 50);
-    drawPillText(BASE_W / 2 - 142, 145, 284, 28, "生成中にあそべるミニゲーム！");
+    drawComicTitle("キャラ", BASE_W / 2, 66, 42);
+    drawComicTitle("キャッチ!", BASE_W / 2, 110, 42);
+    drawPillText(BASE_W / 2 - 142, 130, 284, 27, "生成中にあそべるミニゲーム！");
     drawLandscapeRulesCard();
     drawStartButton();
   }
 
   function drawStartDecorations() {
-    const sideScale = viewportProfile === "portrait" ? 1.0 : 0.74;
-    drawStickerCharacter("character1", BASE_W * 0.12, BASE_H * 0.20, 66 * sideScale, -0.12);
-    drawStickerCharacter("character2", BASE_W * 0.10, BASE_H * 0.48, 64 * sideScale, 0.08);
-    drawStickerCharacter("character3", BASE_W * 0.20, BASE_H * 0.62, 74 * sideScale, -0.05);
-    drawStickerCharacter("character4", BASE_W * 0.79, BASE_H * 0.25, 72 * sideScale, 0.10);
-    drawStickerCharacter("character6", BASE_W * 0.90, BASE_H * 0.26, 76 * sideScale, 0.14);
-    drawStickerCharacter("character9", BASE_W * 0.86, BASE_H * 0.58, 74 * sideScale, -0.08);
-    drawStickerCharacter("character8", BASE_W * 0.90, BASE_H * 0.78, 62 * sideScale, 0.10);
+    if (viewportProfile === "portrait") {
+      drawStickerCharacter("character1", BASE_W * 0.12, BASE_H * 0.20, 66, -0.12);
+      drawStickerCharacter("character2", BASE_W * 0.10, BASE_H * 0.48, 64, 0.08);
+      drawStickerCharacter("character3", BASE_W * 0.20, BASE_H * 0.62, 74, -0.05);
+      drawStickerCharacter("character4", BASE_W * 0.79, BASE_H * 0.25, 72, 0.10);
+      drawStickerCharacter("character6", BASE_W * 0.90, BASE_H * 0.26, 76, 0.14);
+      drawStickerCharacter("character9", BASE_W * 0.86, BASE_H * 0.58, 74, -0.08);
+      drawStickerCharacter("character8", BASE_W * 0.90, BASE_H * 0.78, 62, 0.10);
+    } else {
+      drawStickerCharacter("character1", 78, 118, 42, -0.12);
+      drawStickerCharacter("character2", 62, 226, 44, 0.08);
+      drawStickerCharacter("character3", 120, 268, 50, -0.05);
+      drawStickerCharacter("character4", BASE_W - 105, 126, 48, 0.10);
+      drawStickerCharacter("character6", BASE_W - 54, 122, 50, 0.14);
+      drawStickerCharacter("character9", BASE_W - 74, 235, 50, -0.08);
+      drawStickerCharacter("character8", BASE_W - 106, 318, 42, 0.10);
+    }
 
     drawSimpleStar(BASE_W * 0.23, BASE_H * 0.16, 6, 14, "#ffd64f");
     drawSimpleStar(BASE_W * 0.74, BASE_H * 0.16, 6, 14, "#ffd64f");
@@ -754,22 +763,44 @@ export function startGame() {
   }
 
   function drawLandscapeRulesCard() {
-    const x = BASE_W * 0.20;
-    const y = BASE_H * 0.39;
-    const w = BASE_W * 0.60;
-    const h = BASE_H * 0.29;
+    const x = 126;
+    const y = 164;
+    const w = BASE_W - x * 2;
+    const h = 114;
     drawCreamPanel(x, y, w, h, 15);
-    drawRuleItem(x + 34, y + 38, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めて高得点をめざそう！");
-    drawRuleItem(x + w * 0.53, y + 38, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "ボムをキャッチするとゲームオーバー！");
-    drawRuleItem(x + 34, y + h * 0.67, "💧", "#42a9e8", "取り逃すと少しだけ減点…", "キャラを取り逃すとスコアが少し減っちゃうよ！");
-    drawRuleItem(x + w * 0.53, y + h * 0.67, "盾", "#4aa34a", "最初の5秒はセーフタイム！", "ボムは出てこないので安心してプレイできるよ！");
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(217,171,102,0.34)";
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2, y + 14);
+    ctx.lineTo(x + w / 2, y + h - 14);
+    ctx.moveTo(x + 16, y + h / 2);
+    ctx.lineTo(x + w - 16, y + h / 2);
+    ctx.stroke();
+    ctx.restore();
+
+    const cellW = w / 2;
+    const cellH = h / 2;
+    drawRuleItem(x + 36, y + 32, "★", "#ffd64f", "キャラをキャッチ！", "+ポイント。高得点をめざそう！", {
+      maxTextWidth: cellW - 74,
+    });
+    drawRuleItem(x + cellW + 36, y + 32, "☠", "#2d2d2d", "ボムは避ける！", "当たるとゲームオーバー！", {
+      maxTextWidth: cellW - 74,
+    });
+    drawRuleItem(x + 36, y + cellH + 32, "💧", "#42a9e8", "取り逃しは減点", "落とすと少しだけ減点。", {
+      maxTextWidth: cellW - 74,
+    });
+    drawRuleItem(x + cellW + 36, y + cellH + 32, "盾", "#4aa34a", "最初の5秒は安全", "ボムなしでプレイ開始。", {
+      maxTextWidth: cellW - 74,
+    });
   }
 
   function drawPortraitRulesCard() {
     const x = 22;
     const y = 165;
     const w = BASE_W - 44;
-    const h = 220;
+    const h = 238;
     drawCreamPanel(x, y, w, h, 13);
     drawRuleItem(x + 26, y + 40, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めよう！");
     drawRuleItem(x + 26, y + 95, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "当たるとゲームオーバー！");
@@ -800,6 +831,11 @@ export function startGame() {
   }
 
   function drawBottomOperationGuide() {
+    if (viewportProfile === "portrait") {
+      drawPortraitOperationGuide();
+      return;
+    }
+
     const h = 96;
     const y = BASE_H - h;
     ctx.fillStyle = "rgba(255,250,241,0.98)";
@@ -811,6 +847,43 @@ export function startGame() {
     ctx.stroke();
     drawOperationMini(BASE_W * 0.22, y + 48, "スワイプ / ドラッグ", "左右に動かそう！");
     drawOperationMini(BASE_W * 0.72, y + 48, "A / D", "または左右に動かそう！");
+  }
+
+  function drawPortraitOperationGuide() {
+    const h = 88;
+    const y = BASE_H - h;
+    ctx.save();
+    ctx.fillStyle = "rgba(255,250,241,0.98)";
+    ctx.fillRect(0, y, BASE_W, h);
+    ctx.strokeStyle = "rgba(80,55,35,0.16)";
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(BASE_W, y);
+    ctx.stroke();
+
+    ctx.strokeStyle = "#e90000";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(38, y + 24);
+    ctx.lineTo(92, y + 24);
+    ctx.stroke();
+    ctx.fillStyle = "#e90000";
+    ctx.font = "900 24px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("↔", 65, y + 24);
+
+    drawKeycap(292, y + 42, "A");
+    drawKeycap(326, y + 42, "D");
+
+    ctx.fillStyle = "#2b211b";
+    ctx.textAlign = "left";
+    ctx.font = "900 16px system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans JP', sans-serif";
+    ctx.fillText("スワイプ / ドラッグ", 104, y + 30);
+    ctx.font = "800 13px system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans JP', sans-serif";
+    ctx.fillText("または A / D で左右に動こう！", 104, y + 58);
+    ctx.restore();
   }
 
   function drawCreamPanel(x, y, w, h, r) {
@@ -844,11 +917,12 @@ export function startGame() {
     ctx.restore();
   }
 
-  function drawRuleItem(x, y, icon, iconColor, title, body) {
+  function drawRuleItem(x, y, icon, iconColor, title, body, options = {}) {
     ctx.save();
-    const iconSize = viewportProfile === "portrait" ? 22 : 26;
+    const isPortrait = viewportProfile === "portrait";
+    const iconSize = isPortrait ? 22 : 23;
     if (icon === "盾") drawShieldIcon(x, y - 2, iconSize * 0.78);
-    else if (icon === "☠") drawBomb(x, y, iconSize * 1.6);
+    else if (icon === "☠") drawBomb(x, y, iconSize * 1.45);
     else if (icon === "★") drawSimpleStar(x, y, iconSize * 0.35, iconSize * 0.72, iconColor);
     else {
       ctx.font = `900 ${iconSize}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
@@ -861,13 +935,46 @@ export function startGame() {
     const tx = x + (viewportProfile === "portrait" ? 34 : 40);
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = title.includes("ボム") ? "#e90000" : title.includes("セーフ") ? "#318c35" : "#2b211b";
-    ctx.font = `900 ${viewportProfile === "portrait" ? 13 : 14}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
-    ctx.fillText(title, tx, y - 4);
+    ctx.fillStyle = title.includes("ボム") ? "#e90000" : title.includes("セーフ") || title.includes("安全") ? "#318c35" : "#2b211b";
+    ctx.font = `900 ${isPortrait ? 13 : 12}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    drawSingleLineText(title, tx, y - 4, options.maxTextWidth);
     ctx.fillStyle = "#2b211b";
-    ctx.font = `700 ${viewportProfile === "portrait" ? 11 : 12}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
-    ctx.fillText(body, tx, y + 16);
+    ctx.font = `700 ${isPortrait ? 11 : 10}px system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif`;
+    drawWrappedText(body, tx, y + 15, options.maxTextWidth, isPortrait ? 14 : 12, 2);
     ctx.restore();
+  }
+
+  function drawSingleLineText(text, x, y, maxWidth) {
+    if (!maxWidth) {
+      ctx.fillText(text, x, y);
+      return;
+    }
+    ctx.fillText(text, x, y, maxWidth);
+  }
+
+  function drawWrappedText(text, x, y, maxWidth, lineHeight, maxLines = 2) {
+    if (!maxWidth) {
+      ctx.fillText(text, x, y);
+      return;
+    }
+
+    const lines = [];
+    let line = "";
+    for (const char of text) {
+      const nextLine = line + char;
+      if (ctx.measureText(nextLine).width > maxWidth && line) {
+        lines.push(line);
+        line = char;
+        if (lines.length >= maxLines) break;
+      } else {
+        line = nextLine;
+      }
+    }
+    if (line && lines.length < maxLines) lines.push(line);
+
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, y + i * lineHeight, maxWidth);
+    }
   }
 
   function drawStickerCharacter(id, x, y, maxSize, rot = 0) {
