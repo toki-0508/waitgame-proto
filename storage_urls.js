@@ -22,6 +22,7 @@ function shuffleInPlace(arr) {
 }
 
 function pLimit(concurrency) {
+  const maxConcurrency = Math.max(1, concurrency | 0);
   let active = 0;
   const q = [];
   const next = () => {
@@ -37,7 +38,7 @@ function pLimit(concurrency) {
           .then((v) => { resolve(v); next(); })
           .catch(() => { resolve(null); next(); });
       };
-      if (active < concurrency) run();
+      if (active < maxConcurrency) run();
       else q.push(run);
     });
 }
@@ -154,55 +155,59 @@ export function streamGenerationCharacterUrls({
   }
 
   (async () => {
-    const root = ref(storage, "generations");
-    const limiter = pLimit(urlConcurrency);
+    try {
+      const root = ref(storage, "generations");
+      const limiter = pLimit(urlConcurrency);
 
-    // 1) generations直下prefix（フォルダ）を少し集める
-    const prefixes = [];
-    let pageToken = undefined;
+      // 1) generations直下prefix（フォルダ）を少し集める
+      const prefixes = [];
+      let pageToken = undefined;
 
-    while (!stopped && prefixes.length < folderSample) {
-      const res = await list(root, { maxResults: prefixPageSize, pageToken });
-      prefixes.push(...res.prefixes);
-      pageToken = res.nextPageToken;
-      if (!pageToken) break;
-    }
-
-    shuffleInPlace(prefixes);
-    const picked = prefixes.slice(0, folderSample);
-
-    // 2) 各フォルダから少し拾ってURL化→バッチ通知
-    let outCount = seen.size;
-    let batch = [];
-
-    for (const folderRef of picked) {
-      if (stopped || outCount >= maxUrls) break;
-
-      const res = await list(folderRef, { maxResults: perFolderMaxResults });
-      const imageItems = res.items.filter((it) => isImagePath(it.fullPath));
-
-      const urls = await Promise.all(
-        imageItems.map((it) => limiter(() => getDownloadURL(it)))
-      );
-
-      for (const u of urls) {
-        if (stopped || !u || seen.has(u)) continue;
-        seen.add(u);
-        batch.push(u);
-        outCount++;
-
-        if (batch.length >= batchSize) {
-          onBatch(batch);
-          batch = [];
-        }
-        if (outCount >= maxUrls) break;
+      while (!stopped && prefixes.length < folderSample) {
+        const res = await list(root, { maxResults: prefixPageSize, pageToken });
+        prefixes.push(...res.prefixes);
+        pageToken = res.nextPageToken;
+        if (!pageToken) break;
       }
+
+      shuffleInPlace(prefixes);
+      const picked = prefixes.slice(0, folderSample);
+
+      // 2) 各フォルダから少し拾ってURL化→バッチ通知
+      let outCount = seen.size;
+      let batch = [];
+
+      for (const folderRef of picked) {
+        if (stopped || outCount >= maxUrls) break;
+
+        const res = await list(folderRef, { maxResults: perFolderMaxResults });
+        const imageItems = res.items.filter((it) => isImagePath(it.fullPath));
+
+        const urls = await Promise.all(
+          imageItems.map((it) => limiter(() => getDownloadURL(it)))
+        );
+
+        for (const u of urls) {
+          if (stopped || !u || seen.has(u)) continue;
+          seen.add(u);
+          batch.push(u);
+          outCount++;
+
+          if (batch.length >= batchSize) {
+            onBatch(batch);
+            batch = [];
+          }
+          if (outCount >= maxUrls) break;
+        }
+      }
+
+      if (!stopped && batch.length) onBatch(batch);
+
+      // 3) キャッシュ更新
+      saveCache(Array.from(seen).slice(0, maxUrls));
+    } catch {
+      // Storage探索はゲーム開始をブロックしない。失敗時はキャッシュ分だけで終了する。
     }
-
-    if (!stopped && batch.length) onBatch(batch);
-
-    // 3) キャッシュ更新
-    saveCache(Array.from(seen).slice(0, maxUrls));
   })();
 
   return { stop };

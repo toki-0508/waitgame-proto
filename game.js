@@ -118,14 +118,14 @@ export function startGame() {
       INTERVAL_SEC_MIN: 0.18,
     },
     BOMB: {
-      SAFE_TIME_SEC: 5.0,
+      SAFE_TIME_SEC: 3.0,
       RATE_BASE: 0.22,
       RATE_ADD_BY_DIFFICULTY: 0.22,
       SIZE_MIN: 28,
       SIZE_MAX: 44,
     },
     CHARA: {
-      SIZE_MIN: 48,
+      SIZE_MIN: 50,
       SIZE_MAX: 96,
       MISS_PENALTY_POINTS: 1,
     },
@@ -143,8 +143,8 @@ export function startGame() {
       POST_SCORE_EVERY_POINTS: 25,
     },
     RARE: {
-      SPAWN_WEIGHT: 0.06,
-      POINTS: 120,
+      SPAWN_WEIGHT: 0.1,
+      POINTS: 100,
       SPARKLE_ENABLED: true,
       SPARKLE_COUNT: 10,
       SPARKLE_RADIUS: 18,
@@ -154,15 +154,15 @@ export function startGame() {
 
   /** @type {CharacterDef[]} */
   const LOCAL_CHARACTERS = [
-    { id: "character1", label: "ピンクちゃん", src: "./img/character1.png", spawnWeight: 1.0, points: 10 },
-    { id: "character2", label: "ぶたまる", src: "./img/character2.png", spawnWeight: 1.0, points: 10 },
-    { id: "character3", label: "もふキュー", src: "./img/character3.png", spawnWeight: 1.0, points: 10 },
-    { id: "character4", label: "えかきっこ", src: "./img/character4.png", spawnWeight: 0.9, points: 12 },
-    { id: "character5", label: "わんちゃん", src: "./img/character5.png", spawnWeight: 0.9, points: 12 },
-    { id: "character6", label: "ガオーくん", src: "./img/character6.png", spawnWeight: 0.8, points: 14 },
-    { id: "character7", label: "くまさん", src: "./img/character7.png", spawnWeight: 0.8, points: 14 },
-    { id: "character8", label: "ロボット", src: "./img/character8.png", spawnWeight: 0.7, points: 16 },
-    { id: "character9", label: "ねこメガネ", src: "./img/character9.png", spawnWeight: 0.6, points: 18 },
+    { id: "character1", label: "ピンクちゃん", src: "./img/character1.png", spawnWeight: 1.0, points: 5 },
+    { id: "character2", label: "ぶたまる", src: "./img/character2.png", spawnWeight: 1.0, points: 5 },
+    { id: "character3", label: "もふキュー", src: "./img/character3.png", spawnWeight: 1.0, points: 5 },
+    { id: "character4", label: "えかきっこ", src: "./img/character4.png", spawnWeight: 0.9, points: 10 },
+    { id: "character5", label: "わんちゃん", src: "./img/character5.png", spawnWeight: 0.9, points: 10 },
+    { id: "character6", label: "ガオーくん", src: "./img/character6.png", spawnWeight: 0.8, points: 10 },
+    { id: "character7", label: "くまさん", src: "./img/character7.png", spawnWeight: 0.8, points: 15 },
+    { id: "character8", label: "ロボット", src: "./img/character8.png", spawnWeight: 0.7, points: 15 },
+    { id: "character9", label: "ねこメガネ", src: "./img/character9.png", spawnWeight: 0.6, points: 15 },
   ];
 
   /** @type {CharacterDef} */
@@ -176,12 +176,16 @@ export function startGame() {
   };
 
   const canvas = document.getElementById("c");
-  const ctx = canvas.getContext("2d", { alpha: false });
-
   const scoreEl = document.getElementById("score");
   const statusEl = document.getElementById("status");
   const overlayEl = document.getElementById("overlay");
   const containerEl = document.getElementById("container");
+  if (!(canvas instanceof HTMLCanvasElement) || !scoreEl || !statusEl || !overlayEl || !containerEl) {
+    throw new Error("Game UI elements are missing.");
+  }
+
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) throw new Error("Canvas 2D context is not available.");
 
   // ===== 背景：img/background.png =====
   const bg = new Image();
@@ -212,6 +216,7 @@ export function startGame() {
   let score = 0;
   let safeTime = 0;
   let lastPostedScore = 0;
+  const MOVE_KEYS = new Set(["ArrowLeft", "ArrowRight", "a", "A", "d", "D"]);
 
   const player = {
     x: 0,
@@ -255,6 +260,23 @@ export function startGame() {
     input.targetX = clamp(nx, 0, 1) * BASE_W;
   }
 
+  function pointerToCanvasPoint(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * BASE_W,
+      y: ((e.clientY - rect.top) / rect.height) * BASE_H,
+    };
+  }
+
+  function rectContainsPoint(rect, point) {
+    return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h;
+  }
+
+  function updateMoveKey(key, pressed) {
+    if (key === "ArrowLeft" || key === "a" || key === "A") input.left = pressed;
+    if (key === "ArrowRight" || key === "d" || key === "D") input.right = pressed;
+  }
+
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     setTargetFromClientX(e.clientX);
@@ -266,22 +288,18 @@ export function startGame() {
 
   canvas.addEventListener("click", (e) => {
     if (stopped || running || !ready) return;
-    const rect = canvas.getBoundingClientRect();
-    const cx = ((e.clientX - rect.left) / rect.width) * BASE_W;
-    const cy = ((e.clientY - rect.top) / rect.height) * BASE_H;
-
-    const b = getStartButtonRect();
-    const hit = cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
-    if (hit) startRun();
+    if (rectContainsPoint(getStartButtonRect(), pointerToCanvasPoint(e))) startRun();
   });
 
   window.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft" || e.key === "a") input.left = true;
-    if (e.key === "ArrowRight" || e.key === "d") input.right = true;
+    if (!MOVE_KEYS.has(e.key)) return;
+    e.preventDefault();
+    updateMoveKey(e.key, true);
   });
   window.addEventListener("keyup", (e) => {
-    if (e.key === "ArrowLeft" || e.key === "a") input.left = false;
-    if (e.key === "ArrowRight" || e.key === "d") input.right = false;
+    if (!MOVE_KEYS.has(e.key)) return;
+    e.preventDefault();
+    updateMoveKey(e.key, false);
   });
 
   // ===== 親→子：待ち終了 =====
@@ -406,30 +424,28 @@ export function startGame() {
   const characterPool = createWeightedCharacterPool();
 
   function createWeightedCharacterPool() {
-    /** @type {CharacterDef[]} */
-    let pool = [];
     /** @type {{def: CharacterDef, cumulative: number}[]} */
     let cumulative = [];
     let total = 0;
 
     function rebuild() {
-      pool = [];
+      const candidates = [];
 
       for (const d of LOCAL_CHARACTERS) {
         const w = Math.max(0, d.spawnWeight ?? 0);
         if (w <= 0) continue;
-        pool.push(d);
+        candidates.push(d);
       }
 
       const rareSlot = sprites.get(RARE_CHARACTER.id);
       if (rareSlot?.ready) {
         const w = Math.max(0, RARE_CHARACTER.spawnWeight ?? 0);
-        if (w > 0) pool.push(RARE_CHARACTER);
+        if (w > 0) candidates.push(RARE_CHARACTER);
       }
 
       cumulative = [];
       total = 0;
-      for (const def of pool) {
+      for (const def of candidates) {
         total += Math.max(0, def.spawnWeight ?? 0);
         cumulative.push({ def, cumulative: total });
       }
@@ -448,6 +464,18 @@ export function startGame() {
     return { rebuild, pick };
   }
 
+  function createDropBase(size) {
+    return {
+      x: rand(size / 2, BASE_W - size / 2),
+      y: -size,
+      w: size,
+      h: size,
+      vy: fallSpeed(score) + rand(CONFIG.FALL.SPEED_JITTER_MIN, CONFIG.FALL.SPEED_JITTER_MAX),
+      rot: rand(-0.6, 0.6),
+      t: 0,
+    };
+  }
+
   function spawnDrop() {
     const isBomb = Math.random() < bombRate();
     const sizeMul = TUNE.ITEM_SIZE_MUL;
@@ -457,14 +485,8 @@ export function startGame() {
 
     if (isBomb) {
       drops.push({
+        ...createDropBase(size),
         type: "bomb",
-        x: rand(size / 2, BASE_W - size / 2),
-        y: -size,
-        w: size,
-        h: size,
-        vy: fallSpeed(score) + rand(CONFIG.FALL.SPEED_JITTER_MIN, CONFIG.FALL.SPEED_JITTER_MAX),
-        rot: rand(-0.6, 0.6),
-        t: 0,
       });
       return;
     }
@@ -473,6 +495,7 @@ export function startGame() {
     const spriteSlot = def ? sprites.get(def.id) : null;
 
     drops.push({
+      ...createDropBase(size),
       type: "chara",
       charaId: def?.id ?? "unknown",
       label: def?.label ?? "unknown",
@@ -480,18 +503,11 @@ export function startGame() {
       isRare: !!def?.isRare,
       src: def?.src ?? null,
       sprite: spriteSlot?.ready ? spriteSlot.img : null,
-      x: rand(size / 2, BASE_W - size / 2),
-      y: -size,
-      w: size,
-      h: size,
-      vy: fallSpeed(score) + rand(CONFIG.FALL.SPEED_JITTER_MIN, CONFIG.FALL.SPEED_JITTER_MAX),
-      rot: rand(-0.6, 0.6),
-      t: 0,
     });
   }
 
   function resetWorld() {
-    score = 0;
+    setScore(0);
     lastPostedScore = 0;
     collected.clear();
     drops.length = 0;
@@ -502,8 +518,6 @@ export function startGame() {
     player.x = BASE_W * 0.5;
     player.vx = 0;
     lastTs = 0;
-
-    scoreEl.textContent = `SCORE: 0`;
   }
 
   function startRun() {
@@ -518,13 +532,17 @@ export function startGame() {
   function addCollected(charaId, points) {
     const prev = collected.get(charaId) ?? 0;
     collected.set(charaId, prev + 1);
-    score += points;
-    scoreEl.textContent = `SCORE: ${score}`;
+    setScore(score + points);
 
     if (score - lastPostedScore >= CONFIG.HUD.POST_SCORE_EVERY_POINTS) {
       lastPostedScore = score;
       postToParent(MESSAGE.SCORE, { score });
     }
+  }
+
+  function setScore(nextScore) {
+    score = Math.max(0, nextScore | 0);
+    scoreEl.textContent = `SCORE: ${score}`;
   }
 
   function update(dt) {
@@ -573,8 +591,7 @@ export function startGame() {
       if (d.y - d.h / 2 > BASE_H + 10) {
         drops.splice(i, 1);
         if (d.type === "chara") {
-          score = Math.max(0, score - CONFIG.CHARA.MISS_PENALTY_POINTS);
-          scoreEl.textContent = `SCORE: ${score}`;
+          setScore(score - CONFIG.CHARA.MISS_PENALTY_POINTS);
         }
       }
     }
@@ -1233,22 +1250,14 @@ export function startGame() {
 
     const table = document.createElement("table");
     table.className = "resultTable";
-    const thead = document.createElement("thead");
-    thead.innerHTML = `
-      <tr>
-        <th>キャラ</th>
-        <th style="text-align:right;">個数</th>
-        <th style="text-align:right;">pt/体</th>
-        <th style="text-align:right;">小計</th>
-      </tr>
-    `;
-    table.appendChild(thead);
+    table.appendChild(buildResultTableHead());
 
     const tbody = document.createElement("tbody");
     const rows = buildScoreRows();
     if (!rows.length) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="4" class="emptyResult">まだ何も集められていない…</td>`;
+      const td = createTableCell("まだ何も集められていない…", { className: "emptyResult", colSpan: 4 });
+      tr.appendChild(td);
       tbody.appendChild(tr);
     } else {
       for (const r of rows) tbody.appendChild(r);
@@ -1262,7 +1271,11 @@ export function startGame() {
 
     const total = document.createElement("div");
     total.className = "resultTotal";
-    total.innerHTML = `<span>合計スコア</span><strong>${score.toLocaleString()} pt</strong>`;
+    const totalLabel = document.createElement("span");
+    totalLabel.textContent = "合計スコア";
+    const totalValue = document.createElement("strong");
+    totalValue.textContent = `${score.toLocaleString()} pt`;
+    total.append(totalLabel, totalValue);
     card.appendChild(total);
 
     const hint = document.createElement("div");
@@ -1283,6 +1296,35 @@ export function startGame() {
     }
 
     return card;
+  }
+
+  function buildResultTableHead() {
+    const thead = document.createElement("thead");
+    const tr = document.createElement("tr");
+    tr.append(
+      createTableHeader("キャラ"),
+      createTableHeader("個数", { alignRight: true }),
+      createTableHeader("pt/体", { alignRight: true }),
+      createTableHeader("小計", { alignRight: true })
+    );
+    thead.appendChild(tr);
+    return thead;
+  }
+
+  function createTableHeader(text, { alignRight = false } = {}) {
+    const th = document.createElement("th");
+    th.textContent = text;
+    if (alignRight) th.className = "numericCell";
+    return th;
+  }
+
+  function createTableCell(text, { alignRight = false, className = "", colSpan = 1 } = {}) {
+    const td = document.createElement("td");
+    td.textContent = text;
+    if (className) td.className = className;
+    if (alignRight) td.classList.add("numericCell");
+    if (colSpan > 1) td.colSpan = colSpan;
+    return td;
   }
 
   function buildScoreRows() {
@@ -1325,17 +1367,9 @@ export function startGame() {
       nameWrap.appendChild(nameText);
       tdName.appendChild(nameWrap);
 
-      const tdCount = document.createElement("td");
-      tdCount.style.textAlign = "right";
-      tdCount.textContent = String(it.count);
-
-      const tdPts = document.createElement("td");
-      tdPts.style.textAlign = "right";
-      tdPts.textContent = String(it.points);
-
-      const tdSub = document.createElement("td");
-      tdSub.style.textAlign = "right";
-      tdSub.textContent = String(it.subtotal);
+      const tdCount = createTableCell(String(it.count), { alignRight: true });
+      const tdPts = createTableCell(String(it.points), { alignRight: true });
+      const tdSub = createTableCell(String(it.subtotal), { alignRight: true });
 
       tr.appendChild(tdName);
       tr.appendChild(tdCount);
@@ -1497,7 +1531,7 @@ export function startGame() {
 
   // ===== 起動 =====
   applyViewport(viewportProfile);
-  scoreEl.textContent = "SCORE: 0";
+  setScore(0);
   statusEl.textContent = "LOADING...";
   requestAnimationFrame(loop);
 

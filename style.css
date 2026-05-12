@@ -310,6 +310,9 @@ html:not(.embed) #container{
   background:rgba(255,245,224,.72);
   font-weight:900;
 }
+.resultTable .numericCell{
+  text-align:right;
+}
 .resultTable tr:last-child td{ border-bottom:none; }
 .resultIcon{
   width:36px;
