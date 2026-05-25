@@ -27,7 +27,7 @@ python3 -m http.server 8080 --bind 127.0.0.1
 
 ## 埋め込み（既存サイトに載せる）
 
-- `?embed=1` : 外側の背景/余白を抑えた埋め込み向け表示
+- `?embed=1` : 外側の背景/余白を抑えた埋め込み向け表示（指定がない場合は親UIを崩しにくい横長表示）
 - `?portrait=1` / `?landscape=1` : 縦長/横長の表示・ゲーム調整を強制
 
 ## 既存サイトへの埋め込み手順
@@ -54,7 +54,7 @@ PC横長表示を強制したい場合:
 https://toki-0508.github.io/waitgame-proto/?embed=1&landscape=1
 ```
 
-通常は `?embed=1` だけで問題ありません。ゲーム側が画面の向きから縦長/横長を自動判定します。
+通常は `?embed=1` だけで問題ありません。埋め込み時は、親ページ側の見出しや生成ボタンと同居しても崩れにくいよう、指定がない場合は横長表示になります。ゲームだけを大きく見せる枠を用意できる場合のみ `portrait=1` を使ってください。
 
 ### 2. HTMLにゲーム表示エリアを追加する
 
@@ -71,7 +71,7 @@ https://toki-0508.github.io/waitgame-proto/?embed=1&landscape=1
 </div>
 ```
 
-スマホ画面で縦長に固定したい場合は `src` を次に変えます。
+スマホ画面で縦長に固定したい場合は `src` を次に変えます。ただし縦長表示は高さを使うため、親ページ側で十分な表示領域を確保してください。
 
 ```html
 src="https://toki-0508.github.io/waitgame-proto/?embed=1&portrait=1"
@@ -95,7 +95,7 @@ src="https://toki-0508.github.io/waitgame-proto/?embed=1&portrait=1"
 
     if (message.type === "RESIZE" && typeof message.payload?.height === "number") {
       waitgameFrame.style.height = `${message.payload.height}px`;
-      waitgameFrame.style.aspectRatio = "auto";
+      waitgameFrame.style.aspectRatio = message.payload?.aspectRatio ?? "auto";
     }
 
     if (message.type === "SCORE") {

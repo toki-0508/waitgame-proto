@@ -5,9 +5,10 @@ import { startGame } from "./game.js";
 // 埋め込み（iframe / ポップアップ）想定のときは余白などを抑える
 // - iframe内なら自動で embed モード
 // - URLに ?embed=1 を付けても embed モード
+let isEmbed = false;
 try {
-  const embed = (window.parent && window.parent !== window) || new URLSearchParams(location.search).get("embed") === "1";
-  document.documentElement.classList.toggle("embed", !!embed);
+  isEmbed = (window.parent && window.parent !== window) || new URLSearchParams(location.search).get("embed") === "1";
+  document.documentElement.classList.toggle("embed", isEmbed);
 } catch {}
 
 // 画面が縦長（スマホ想定）なら portrait モードにする
@@ -17,9 +18,11 @@ function updateViewportModeClass() {
     const qs = new URLSearchParams(location.search);
     const forcedPortrait = qs.get("portrait") === "1";
     const forcedLandscape = qs.get("landscape") === "1";
+    // 埋め込み先には見出しやCTAが同居するため、指定がない場合は横長のコンパクト表示を優先する。
     const portrait =
       forcedPortrait ||
-      (!forcedLandscape &&
+      (!isEmbed &&
+        !forcedLandscape &&
         (window.matchMedia?.("(orientation: portrait)")?.matches ?? (innerHeight >= innerWidth)));
     document.documentElement.classList.toggle("portrait", !!portrait);
   } catch {}

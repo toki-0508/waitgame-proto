@@ -200,8 +200,13 @@ export function startGame() {
     window.parent.postMessage({ type, payload }, ALLOWED_PARENT_ORIGIN);
   }
   function sendResize() {
-    const h = Math.ceil(containerEl.getBoundingClientRect().height);
-    postToParent(MESSAGE.RESIZE, { height: h });
+    const rect = containerEl.getBoundingClientRect();
+    postToParent(MESSAGE.RESIZE, {
+      height: Math.ceil(rect.height),
+      width: Math.ceil(rect.width),
+      profile: viewportProfile,
+      aspectRatio: `${BASE_W} / ${BASE_H}`,
+    });
   }
   const ro = new ResizeObserver(() => sendResize());
   ro.observe(containerEl);
@@ -240,8 +245,7 @@ export function startGame() {
     BASE_W = TUNE.BASE_W;
     BASE_H = TUNE.BASE_H;
 
-    canvas.width = BASE_W;
-    canvas.height = BASE_H;
+    configureCanvasResolution();
 
     player.w = CONFIG.PLAYER.WIDTH * TUNE.PLAYER_SIZE_MUL;
     player.h = CONFIG.PLAYER.HEIGHT * TUNE.PLAYER_SIZE_MUL;
@@ -249,6 +253,16 @@ export function startGame() {
 
     // ルール画面中の回転/リサイズは見た目だけ合わせる（プレイ中は変えない）
     resetWorld();
+  }
+
+  function configureCanvasResolution() {
+    const canvasScale = clamp(window.devicePixelRatio || 1, 1, 3);
+    canvas.width = Math.round(BASE_W * canvasScale);
+    canvas.height = Math.round(BASE_H * canvasScale);
+    canvas.style.aspectRatio = `${BASE_W} / ${BASE_H}`;
+    ctx.setTransform(canvasScale, 0, 0, canvasScale, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
   }
 
   // ===== 入力 =====
@@ -725,15 +739,15 @@ export function startGame() {
     drawStartDecorations();
 
     if (viewportProfile === "portrait") {
-      drawHudPanel(16, 14, 108, 58, "SCORE", "000000", { accent: "#e90000", icon: "star" });
-      drawHudPanel(BASE_W - 130, 14, 114, 58, "STATUS", `SAFE ${CONFIG.BOMB.SAFE_TIME_SEC.toFixed(1)}`, {
+      drawHudPanel(16, 14, 104, 54, "SCORE", "000000", { accent: "#e90000", icon: "star" });
+      drawHudPanel(BASE_W - 124, 14, 108, 54, "STATUS", `SAFE ${CONFIG.BOMB.SAFE_TIME_SEC.toFixed(1)}`, {
         accent: "#ff7a00",
         icon: "clock",
         smallValue: true,
       });
-      drawComicTitle("キャラ", BASE_W / 2, 72, 44);
-      drawComicTitle("キャッチ!", BASE_W / 2, 118, 44);
-      drawPillText(BASE_W * 0.18, 140, BASE_W * 0.64, 28, "生成中にあそべるミニゲーム！");
+      drawComicTitle("キャラ", BASE_W / 2, 92, 40);
+      drawComicTitle("キャッチ!", BASE_W / 2, 134, 40);
+      drawPillText(BASE_W * 0.18, 154, BASE_W * 0.64, 26, "生成中にあそべるミニゲーム！");
       drawPortraitRulesCard();
       drawStartButton();
       drawBottomOperationGuide();
@@ -755,17 +769,13 @@ export function startGame() {
 
   function drawStartDecorations() {
     if (viewportProfile === "portrait") {
-      drawStickerCharacter("character1", BASE_W * 0.12, BASE_H * 0.20, 66, -0.12);
-      drawStickerCharacter("character2", BASE_W * 0.10, BASE_H * 0.48, 64, 0.08);
-      drawStickerCharacter("character3", BASE_W * 0.20, BASE_H * 0.62, 74, -0.05);
-      drawStickerCharacter("character4", BASE_W * 0.79, BASE_H * 0.25, 72, 0.10);
-      drawStickerCharacter("character6", BASE_W * 0.90, BASE_H * 0.26, 76, 0.14);
-      drawStickerCharacter("character9", BASE_W * 0.86, BASE_H * 0.58, 74, -0.08);
-      drawStickerCharacter("character8", BASE_W * 0.90, BASE_H * 0.78, 62, 0.10);
+      drawStickerCharacter("character1", BASE_W * 0.08, BASE_H * 0.24, 48, -0.12);
+      drawStickerCharacter("character4", BASE_W * 0.92, BASE_H * 0.25, 50, 0.10);
+      drawStickerCharacter("character2", BASE_W * 0.08, BASE_H * 0.63, 48, 0.08);
+      drawStickerCharacter("character9", BASE_W * 0.92, BASE_H * 0.62, 52, -0.08);
     } else {
       drawStickerCharacter("character1", 78, 118, 42, -0.12);
       drawStickerCharacter("character2", 62, 226, 44, 0.08);
-      drawStickerCharacter("character3", 120, 268, 50, -0.05);
       drawStickerCharacter("character4", BASE_W - 105, 126, 48, 0.10);
       drawStickerCharacter("character6", BASE_W - 54, 122, 50, 0.14);
       drawStickerCharacter("character9", BASE_W - 74, 235, 50, -0.08);
@@ -815,14 +825,14 @@ export function startGame() {
 
   function drawPortraitRulesCard() {
     const x = 22;
-    const y = 165;
+    const y = 190;
     const w = BASE_W - 44;
-    const h = 238;
+    const h = 218;
     drawCreamPanel(x, y, w, h, 13);
-    drawRuleItem(x + 26, y + 40, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めよう！");
-    drawRuleItem(x + 26, y + 95, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "当たるとゲームオーバー！");
-    drawRuleItem(x + 26, y + 150, "💧", "#42a9e8", "取り逃すと少しだけ減点…", "落ちたキャラは少し減点！");
-    drawRuleItem(x + 26, y + 205, "盾", "#4aa34a", "最初の5秒はセーフタイム！", "安心してスタートできるよ！");
+    drawRuleItem(x + 26, y + 36, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めよう！");
+    drawRuleItem(x + 26, y + 86, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "当たるとゲームオーバー！");
+    drawRuleItem(x + 26, y + 136, "💧", "#42a9e8", "取り逃すと少しだけ減点…", "落ちたキャラは少し減点！");
+    drawRuleItem(x + 26, y + 186, "盾", "#4aa34a", "最初の5秒はセーフタイム！", "安心してスタートできるよ！");
   }
 
   function drawStartButton() {
