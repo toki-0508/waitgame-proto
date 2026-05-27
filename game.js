@@ -154,14 +154,14 @@ export function startGame() {
 
   /** @type {CharacterDef[]} */
   const LOCAL_CHARACTERS = [
-    { id: "character1", label: "ピンクちゃん", src: "./img/character1.png", spawnWeight: 1.0, points: 5 },
-    { id: "character2", label: "ぶたまる", src: "./img/character2.png", spawnWeight: 1.0, points: 5 },
-    { id: "character3", label: "もふキュー", src: "./img/character3.png", spawnWeight: 1.0, points: 5 },
-    { id: "character4", label: "えかきっこ", src: "./img/character4.png", spawnWeight: 0.9, points: 10 },
-    { id: "character5", label: "わんちゃん", src: "./img/character5.png", spawnWeight: 0.9, points: 10 },
-    { id: "character6", label: "ガオーくん", src: "./img/character6.png", spawnWeight: 0.8, points: 10 },
-    { id: "character7", label: "くまさん", src: "./img/character7.png", spawnWeight: 0.8, points: 15 },
-    { id: "character8", label: "ロボット", src: "./img/character8.png", spawnWeight: 0.7, points: 15 },
+    { id: "character1", label: "お化けちゃん", src: "./img/character1.png", spawnWeight: 1.0, points: 5 },
+    { id: "character2", label: "ねこちゃん", src: "./img/character2.png", spawnWeight: 1.0, points: 5 },
+    { id: "character3", label: "ウーパールーパー", src: "./img/character3.png", spawnWeight: 1.0, points: 5 },
+    { id: "character4", label: "腹巻太郎", src: "./img/character4.png", spawnWeight: 0.9, points: 10 },
+    { id: "character5", label: "ウバメザメ", src: "./img/character5.png", spawnWeight: 0.9, points: 10 },
+    { id: "character6", label: "ほのおくん", src: "./img/character6.png", spawnWeight: 0.8, points: 10 },
+    { id: "character7", label: "ブラックスター", src: "./img/character7.png", spawnWeight: 0.8, points: 15 },
+    { id: "character8", label: "魔法使い", src: "./img/character8.png", spawnWeight: 0.7, points: 15 },
     { id: "character9", label: "ねこメガネ", src: "./img/character9.png", spawnWeight: 0.6, points: 15 },
   ];
 
@@ -739,15 +739,9 @@ export function startGame() {
     drawStartDecorations();
 
     if (viewportProfile === "portrait") {
-      drawHudPanel(16, 14, 104, 54, "SCORE", "000000", { accent: "#e90000", icon: "star" });
-      drawHudPanel(BASE_W - 124, 14, 108, 54, "STATUS", `SAFE ${CONFIG.BOMB.SAFE_TIME_SEC.toFixed(1)}`, {
-        accent: "#ff7a00",
-        icon: "clock",
-        smallValue: true,
-      });
-      drawComicTitle("キャラ", BASE_W / 2, 92, 40);
-      drawComicTitle("キャッチ!", BASE_W / 2, 134, 40);
-      drawPillText(BASE_W * 0.18, 154, BASE_W * 0.64, 26, "生成中にあそべるミニゲーム！");
+      drawComicTitle("キャラ", BASE_W / 2, 72, 38);
+      drawComicTitle("キャッチ!", BASE_W / 2, 112, 38);
+      drawPillText(BASE_W * 0.18, 136, BASE_W * 0.64, 26, "生成中にあそべるミニゲーム！");
       drawPortraitRulesCard();
       drawStartButton();
       drawBottomOperationGuide();
@@ -769,10 +763,14 @@ export function startGame() {
 
   function drawStartDecorations() {
     if (viewportProfile === "portrait") {
-      drawStickerCharacter("character1", BASE_W * 0.08, BASE_H * 0.24, 48, -0.12);
-      drawStickerCharacter("character4", BASE_W * 0.92, BASE_H * 0.25, 50, 0.10);
-      drawStickerCharacter("character2", BASE_W * 0.08, BASE_H * 0.63, 48, 0.08);
-      drawStickerCharacter("character9", BASE_W * 0.92, BASE_H * 0.62, 52, -0.08);
+      drawStickerCharacter("character1", BASE_W * 0.11, BASE_H * 0.22, 44, -0.12);
+      drawStickerCharacter("character4", BASE_W * 0.90, BASE_H * 0.23, 44, 0.10);
+      drawStickerCharacter("character2", BASE_W * 0.10, BASE_H * 0.62, 44, 0.08);
+      drawStickerCharacter("character9", BASE_W * 0.90, BASE_H * 0.61, 46, -0.08);
+      drawSimpleStar(BASE_W * 0.24, 128, 5, 12, "#ffd64f");
+      drawSimpleStar(BASE_W * 0.76, 128, 5, 12, "#ffd64f");
+      drawSimpleStar(BASE_W * 0.82, BASE_H * 0.83, 5, 12, "#ffd64f");
+      return;
     } else {
       drawStickerCharacter("character1", 78, 118, 42, -0.12);
       drawStickerCharacter("character2", 62, 226, 44, 0.08);
@@ -825,14 +823,14 @@ export function startGame() {
 
   function drawPortraitRulesCard() {
     const x = 22;
-    const y = 190;
+    const y = 180;
     const w = BASE_W - 44;
-    const h = 218;
+    const h = 224;
     drawCreamPanel(x, y, w, h, 13);
-    drawRuleItem(x + 26, y + 36, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めよう！");
-    drawRuleItem(x + 26, y + 86, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "当たるとゲームオーバー！");
-    drawRuleItem(x + 26, y + 136, "💧", "#42a9e8", "取り逃すと少しだけ減点…", "落ちたキャラは少し減点！");
-    drawRuleItem(x + 26, y + 186, "盾", "#4aa34a", "最初の5秒はセーフタイム！", "安心してスタートできるよ！");
+    drawRuleItem(x + 26, y + 38, "★", "#ffd64f", "キャラをキャッチで+ポイント！", "いろんなキャラを集めよう！");
+    drawRuleItem(x + 26, y + 90, "☠", "#2d2d2d", "ボムは絶対にキャッチしない！", "当たるとゲームオーバー！");
+    drawRuleItem(x + 26, y + 142, "💧", "#42a9e8", "取り逃すと少しだけ減点…", "落ちたキャラは少し減点！");
+    drawRuleItem(x + 26, y + 194, "盾", "#4aa34a", "最初の5秒はセーフタイム！", "安心してスタートできるよ！");
   }
 
   function drawStartButton() {
