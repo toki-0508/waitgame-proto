@@ -1,6 +1,6 @@
 // main.js
-import { getRandomGenerationCharacterUrl } from "./storage_urls.js";
-import { startGame } from "./game.js";
+import { getRandomGenerationCharacterUrl } from "./storage_urls.js?v=20260602-1";
+import { startGame } from "./game.js?v=20260602-1";
 
 // 埋め込み（iframe / ポップアップ）想定のときは余白などを抑える
 // - iframe内なら自動で embed モード
